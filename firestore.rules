@@ -1,0 +1,132 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (request.auth.token.email == 'sawairamaryam837@gmail.com' && request.auth.token.email_verified == true)
+      );
+    }
+
+    function isValidProduct(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+             data.category is string && data.category.size() <= 100 &&
+             data.regularPrice is number && data.regularPrice >= 0 &&
+             data.colors is list && data.colors.size() <= 20 &&
+             data.isActive is bool;
+    }
+
+    function isValidCategory(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.slug is string && data.slug.size() <= 100 &&
+             data.isActive is bool;
+    }
+
+    function isValidOrder(data) {
+      return data.orderNumber is string && data.orderNumber.size() <= 50 &&
+             data.customer is map &&
+             data.items is list && data.items.size() > 0 && data.items.size() <= 50 &&
+             data.subtotal is number && data.subtotal >= 0 &&
+             data.total is number && data.total >= 0 &&
+             data.paymentMethod is string && data.paymentMethod.size() <= 50 &&
+             data.orderStatus is string && data.orderStatus.size() <= 50;
+    }
+
+    function isValidCart(data) {
+      return data.userId is string && data.userId.size() <= 128 &&
+             data.items is list && data.items.size() <= 100;
+    }
+
+    function isValidWishlist(data) {
+      return data.userId is string && data.userId.size() <= 128 &&
+             data.productIds is list && data.productIds.size() <= 200;
+    }
+
+    function isValidReview(data) {
+      return data.productId is string && data.productId.size() <= 128 &&
+             data.authorName is string && data.authorName.size() <= 100 &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.comment is string && data.comment.size() <= 2000;
+    }
+
+    // Products collection: public read, admin write
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidId(productId) && isValidProduct(incoming());
+      allow delete: if isAdmin() && isValidId(productId);
+    }
+
+    // Categories collection: public read, admin write
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidId(categoryId) && isValidCategory(incoming());
+      allow delete: if isAdmin() && isValidId(categoryId);
+    }
+
+    // Orders collection: creation by customers/guests, read by owner or admin, status update by admin
+    match /orders/{orderId} {
+      allow create: if isValidId(orderId) && isValidOrder(incoming());
+      allow get: if isValidId(orderId) && (isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid));
+      allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow update: if isAdmin() && isValidId(orderId);
+      allow delete: if isAdmin() && isValidId(orderId);
+    }
+
+    // Cart collection: owned by authenticated user or admin
+    match /carts/{userId} {
+      allow read, write: if isValidId(userId) && ((isSignedIn() && request.auth.uid == userId) || isAdmin());
+    }
+
+    // Wishlist collection: owned by authenticated user or admin
+    match /wishlists/{userId} {
+      allow read, write: if isValidId(userId) && ((isSignedIn() && request.auth.uid == userId) || isAdmin());
+    }
+
+    // Store settings: public read, admin write
+    match /store_settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidId(settingId);
+    }
+
+    // Reviews: public read, authenticated create, admin delete
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(reviewId) && isValidReview(incoming());
+      allow update, delete: if isAdmin() && isValidId(reviewId);
+    }
+
+    // Test collection for boot connectivity check
+    match /test/{docId} {
+      allow read: if true;
+    }
+
+    // Admins registry: read by signed in users, write by existing admins
+    match /admins/{adminId} {
+      allow read: if isSignedIn() && isValidId(adminId);
+      allow write: if isAdmin() && isValidId(adminId);
+    }
+  }
+}

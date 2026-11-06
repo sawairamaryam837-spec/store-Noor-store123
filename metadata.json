@@ -1,0 +1,6 @@
+{
+  "name": "NOOR STUDIO",
+  "description": "Premium Pakistani women's fashion e-commerce store offering luxury stitched, unstitched, summer, winter, and formal wear.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
