@@ -104,14 +104,34 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
       const cleanOrder = trackOrderNum.trim().toUpperCase();
       const cleanPhone = trackPhone.trim().replace(/[^0-9]/g, '');
 
-      // Query by order number
-      const q = query(collection(db, 'orders'), where('orderNumber', '==', cleanOrder));
-      const snap = await getDocs(q);
+      // 1. Check local placed orders cache
+      let found: Order | null = null;
+      try {
+        const localOrders: Order[] = JSON.parse(localStorage.getItem('noor_placed_orders') || '[]');
+        const match = localOrders.find((o) => o.orderNumber.toUpperCase() === cleanOrder);
+        if (match) {
+          found = match;
+        }
+      } catch (localErr) {
+        console.warn('Local search note', localErr);
+      }
 
-      if (snap.empty) {
-        setTrackError('Order not found. Please double check your Order Number (e.g. NS-2026-XXXXX).');
+      // 2. If not found in local cache, search Firestore
+      if (!found) {
+        try {
+          const q = query(collection(db, 'orders'), where('orderNumber', '==', cleanOrder));
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            found = snap.docs[0].data() as Order;
+          }
+        } catch (dbErr) {
+          console.warn('Firestore tracking lookup fallback', dbErr);
+        }
+      }
+
+      if (!found) {
+        setTrackError('Order not found. Please double check your Order Number (e.g. NS-2026-XXXXX) or contact Helpline: 03284454746.');
       } else {
-        const found = snap.docs[0].data() as Order;
         const foundPhone = found.customer.phone.replace(/[^0-9]/g, '');
         if (cleanPhone && !foundPhone.includes(cleanPhone)) {
           setTrackError('Phone number does not match this order number.');
@@ -121,7 +141,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
       }
     } catch (err) {
       console.error('Tracking query error', err);
-      setTrackError('Unable to retrieve tracking information at this moment.');
+      setTrackError('Unable to retrieve tracking information at this moment. Please reach out via WhatsApp at +923284454746.');
     } finally {
       setIsSearchingTrack(false);
     }
@@ -485,7 +505,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                 >
                   <div className="aspect-[3/4] bg-[#FAF8F5] relative overflow-hidden cursor-pointer" onClick={() => onSelectProduct(prod)}>
                     <img
-                      src={prod.colors[0]?.images[0] || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=600'}
+                      src={prod.colors[0]?.images[0] || '/assets/aistudio/weddingseason__3__6ca9845d.jpeg'}
                       alt={prod.name}
                       className="w-full h-full object-cover object-top"
                     />

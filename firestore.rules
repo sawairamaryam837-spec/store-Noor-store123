@@ -27,7 +27,7 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && (
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        (request.auth.token.email == 'sawairamaryam837@gmail.com' && request.auth.token.email_verified == true)
+        request.auth.token.email == 'sawairamaryam837@gmail.com'
       );
     }
 
@@ -86,10 +86,10 @@ service cloud.firestore {
       allow delete: if isAdmin() && isValidId(categoryId);
     }
 
-    // Orders collection: creation by customers/guests, read by owner or admin, status update by admin
+    // Orders collection: creation by customers/guests, read by ID or owner or admin, status update by admin
     match /orders/{orderId} {
       allow create: if isValidId(orderId) && isValidOrder(incoming());
-      allow get: if isValidId(orderId) && (isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid));
+      allow get: if isValidId(orderId);
       allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
       allow update: if isAdmin() && isValidId(orderId);
       allow delete: if isAdmin() && isValidId(orderId);

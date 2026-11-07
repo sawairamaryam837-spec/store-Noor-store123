@@ -19,7 +19,12 @@ export interface Product {
   description: string;
   category: string;
   subcategory?: string;
+  brand?: string;
+  type?: string;
   fabric: string;
+  season?: 'Summer' | 'Winter' | 'All Season';
+  isStitched?: boolean;
+  additionalCategories?: string[];
   regularPrice: number;
   salePrice?: number;
   sku: string;

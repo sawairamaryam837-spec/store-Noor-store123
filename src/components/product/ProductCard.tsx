@@ -18,7 +18,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
   const activeColor = product.colors[activeColorIndex] || product.colors[0];
 
   // Primary image for active color
-  const primaryImage = activeColor?.images?.[0] || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800';
+  const primaryImage = activeColor?.images?.[0] || '/assets/aistudio/weddingseason__3__6ca9845d.jpeg';
   const secondaryImage = activeColor?.images?.[1] || primaryImage;
   const [isHovered, setIsHovered] = useState(false);
 
@@ -29,9 +29,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
 
   const currentPrice = product.salePrice || product.regularPrice;
 
+  // Stock calculations
+  const totalStock = product.colors.reduce(
+    (sum, c) => sum + c.sizes.reduce((sSum, s) => sSum + (s.stock || 0), 0),
+    0
+  );
+  const activeColorStock = activeColor?.sizes.reduce((sSum, s) => sSum + (s.stock || 0), 0) || 0;
+  const isSoldOut = totalStock === 0 || activeColorStock === 0;
+  const isLowStock = !isSoldOut && (activeColorStock <= 5 || totalStock <= 5);
+
   // Quick add to cart (adds first in-stock size of active color)
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isSoldOut) {
+      onSelect(product, activeColor?.name);
+      return;
+    }
     const availableSize = activeColor?.sizes.find((s) => s.stock > 0);
     if (!availableSize) {
       onSelect(product, activeColor?.name);
@@ -68,12 +81,32 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
         <img
           src={isHovered ? secondaryImage : primaryImage}
           alt={`${product.name} - ${activeColor?.name}`}
-          className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+          className={`w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105 ${
+            isSoldOut ? 'opacity-85 grayscale-[20%]' : ''
+          }`}
           loading="lazy"
         />
 
+        {/* Sold out overlay banner */}
+        {isSoldOut && (
+          <div className="absolute inset-0 bg-black/35 backdrop-blur-[0.5px] flex items-center justify-center pointer-events-none z-10">
+            <span className="px-3.5 py-1.5 rounded-lg bg-[#1F1C1A]/90 border border-white/20 text-white text-[11px] font-bold uppercase tracking-widest shadow-xl">
+              Sold Out
+            </span>
+          </div>
+        )}
+
         {/* Badges */}
         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-10">
+          {isSoldOut ? (
+            <span className="px-2.5 py-1 rounded-full bg-red-600 text-white text-[10px] uppercase font-bold tracking-wider shadow-md">
+              Sold Out
+            </span>
+          ) : isLowStock ? (
+            <span className="px-2 py-0.5 rounded-full bg-amber-500 text-[#1F1C1A] text-[10px] uppercase font-bold tracking-wider shadow-md animate-pulse">
+              Only {activeColorStock} Left!
+            </span>
+          ) : null}
           {discountPercent && (
             <span className="px-2 py-0.5 rounded-full bg-red-600 text-white text-[11px] font-bold tracking-wider shadow-sm">
               -{discountPercent}%
@@ -109,13 +142,25 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
 
         {/* Quick Add Floating Overlay */}
         <div className="absolute inset-x-3 bottom-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 flex gap-2 z-10">
-          <button
-            onClick={handleQuickAdd}
-            className="flex-1 py-2.5 px-3 bg-[#1F1C1A]/95 hover:bg-[#B88E3E] text-white text-xs font-semibold rounded-lg shadow-lg backdrop-blur-sm flex items-center justify-center gap-1.5 transition"
-          >
-            <ShoppingBag className="w-3.5 h-3.5 text-[#EADBCE]" />
-            <span>Quick Add</span>
-          </button>
+          {isSoldOut ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect(product, activeColor?.name);
+              }}
+              className="flex-1 py-2.5 px-3 bg-red-700/90 hover:bg-red-800 text-white text-xs font-semibold rounded-lg shadow-lg backdrop-blur-sm flex items-center justify-center gap-1.5 transition"
+            >
+              <span>Sold Out</span>
+            </button>
+          ) : (
+            <button
+              onClick={handleQuickAdd}
+              className="flex-1 py-2.5 px-3 bg-[#1F1C1A]/95 hover:bg-[#B88E3E] text-white text-xs font-semibold rounded-lg shadow-lg backdrop-blur-sm flex items-center justify-center gap-1.5 transition"
+            >
+              <ShoppingBag className="w-3.5 h-3.5 text-[#EADBCE]" />
+              <span>Quick Add</span>
+            </button>
+          )}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -132,12 +177,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
       {/* Product Info */}
       <div className="p-4 flex flex-col flex-1 justify-between bg-white">
         <div>
-          {/* Category & Rating */}
-          <div className="flex items-center justify-between text-xs text-[#8A7F76] mb-1">
-            <span className="uppercase tracking-wider text-[11px] font-medium text-[#B88E3E]">
-              {product.category} {product.subcategory ? `• ${product.subcategory}` : ''}
-            </span>
-            <div className="flex items-center gap-1 text-[11px]">
+          {/* Brand & Category & Rating */}
+          <div className="flex items-center justify-between text-xs text-[#8A7F76] mb-1 gap-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {product.brand && (
+                <span className="px-1.5 py-0.5 rounded bg-[#FAF5EE] text-[#B88E3E] font-bold text-[10px] tracking-wider uppercase border border-[#EADBCE]">
+                  {product.brand}
+                </span>
+              )}
+              <span className="uppercase tracking-wider text-[11px] font-medium text-[#7A7169]">
+                {product.category} {product.type ? `• ${product.type}` : (product.subcategory ? `• ${product.subcategory}` : '')}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] shrink-0">
               <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
               <span className="font-semibold text-[#1F1C1A]">{product.rating.toFixed(1)}</span>
               <span className="text-[#A89D93]">({product.reviewCount})</span>
@@ -151,7 +203,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
 
           {/* Fabric Info */}
           <p className="text-[11px] text-[#7A7169] mt-0.5 line-clamp-1 italic">
-            {product.fabric}
+            Fabric: {product.fabric}
           </p>
         </div>
 

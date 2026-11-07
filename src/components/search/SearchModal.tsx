@@ -104,7 +104,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                   className="p-2.5 rounded-xl border border-[#EADBCE] hover:border-[#B88E3E] bg-[#FAF8F5] flex items-center gap-3 cursor-pointer transition"
                 >
                   <img
-                    src={prod.colors[0]?.images[0] || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=200'}
+                    src={prod.colors[0]?.images[0] || '/assets/aistudio/weddingseason__3__6ca9845d.jpeg'}
                     alt={prod.name}
                     className="w-12 h-14 object-cover object-top rounded-lg border border-[#EADBCE]"
                   />

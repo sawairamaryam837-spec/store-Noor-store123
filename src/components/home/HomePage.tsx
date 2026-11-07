@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowRight,
   Sparkles,
@@ -7,10 +7,13 @@ import {
   Truck,
   RefreshCw,
   Star,
-  Heart,
   ChevronRight,
   TrendingUp,
   Percent,
+  Clock,
+  CheckCircle2,
+  PhoneCall,
+  MessageCircle,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { ProductCard } from '../product/ProductCard';
@@ -21,48 +24,103 @@ interface HomePageProps {
   onSelectProduct: (product: Product, colorName?: string) => void;
 }
 
-export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectProduct }) => {
-  const { products, categories, settings } = useStore();
+const HERO_SLIDES = [
+  {
+    title: 'Heer Organza Embroidered Lehenga',
+    subtitle: 'Signature Wedding Wear • Design #196',
+    price: 'Rs. 7,500',
+    tag: 'Bridal & Festive',
+    image: '/assets/aistudio/weddingseason__3__6ca9845d.jpeg',
+    category: 'Wedding Wear',
+  },
+  {
+    title: 'Maria.B Luxury Wedding Edition',
+    subtitle: 'Chiffon & Malai Tie-Dye Organza with Adda Work',
+    price: 'Rs. 6,000',
+    tag: 'Haute Couture',
+    image: '/assets/aistudio/MARIA.B_ONE_OF_LUXURIOUS_COLLECTION_e659eca1.jpeg',
+    category: 'Formal Wear',
+  },
+  {
+    title: 'Iznik Embroidered Chiffon Suit',
+    subtitle: 'Adda Neckline & Heavy Embroidered Dupatta 3PC',
+    price: 'Rs. 5,500',
+    tag: 'Exclusive Release',
+    image: '/assets/aistudio/MOST_ELEGANT_OUTFITT_BY_IZNIK_23851c85.jpeg',
+    category: 'Formal Wear',
+  },
+];
 
-  const newArrivals = products.filter((p) => p.isNewArrival || p.category === 'New Arrivals').slice(0, 4);
-  const bestSellers = products.filter((p) => p.isBestSeller).slice(0, 4);
-  const formalWear = products.filter((p) => p.category === 'Formal Wear').slice(0, 4);
+export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectProduct }) => {
+  const { products, categories } = useStore();
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [activeSeasonTab, setActiveSeasonTab] = useState<'all' | 'summer' | 'winter' | 'formal' | 'sale'>('all');
+
+  // Auto-advance hero slides every 5.5s
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+    }, 5500);
+    return () => clearInterval(timer);
+  }, []);
+
+  const newArrivals = products.filter((p) => p.isNewArrival || p.category === 'New Arrivals').slice(0, 8);
+  const bestSellers = products.filter((p) => p.isBestSeller).slice(0, 8);
+  const formalWear = products.filter((p) => p.category === 'Formal Wear' || p.category === 'Wedding Wear').slice(0, 8);
+
+  // Filtered products for interactive showcase tab
+  const tabFilteredProducts = products.filter((p) => {
+    if (activeSeasonTab === 'summer') return p.season === 'Summer' || p.category === 'Summer Wear';
+    if (activeSeasonTab === 'winter') return p.season === 'Winter' || p.category === 'Winter Wear';
+    if (activeSeasonTab === 'formal') return p.category === 'Formal Wear' || p.category === 'Wedding Wear';
+    if (activeSeasonTab === 'sale') return (p.salePrice && p.salePrice < p.regularPrice) || p.category === 'Sale';
+    return true;
+  }).slice(0, 8);
+
+  const currentHero = HERO_SLIDES[activeSlide];
 
   return (
-    <div className="space-y-16 sm:space-y-24 animate-fadeIn pb-16">
-      {/* HERO SECTION */}
+    <div className="space-y-14 sm:space-y-20 animate-fadeIn pb-16">
+      {/* TOP TICKER URGENCY BANNER */}
+      <div className="bg-gradient-to-r from-[#1F1C1A] via-[#332A26] to-[#1F1C1A] text-[#F3EFEA] py-2 px-4 text-center text-[11px] sm:text-xs font-medium border-b border-[#C5A059]/40 flex items-center justify-center gap-2">
+        <span className="inline-block w-2 h-2 rounded-full bg-[#25D366] animate-pulse" />
+        <span>
+          <strong>RAMADAN & FESTIVE EXHIBITION:</strong> Free PostEx Courier COD nationwide on orders above Rs. 3,500. Use code <span className="bg-[#C5A059] text-black px-1.5 py-0.2 rounded font-bold">NOOR10</span> for extra 10% off!
+        </span>
+      </div>
+
+      {/* LUXURY DYNAMIC HERO SECTION */}
       <section className="relative overflow-hidden bg-[#F3EFEA] border-b border-[#EADBCE]">
-        {/* Background ambient blush circles */}
+        {/* Ambient blush glow */}
         <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-[#F5D8D6]/40 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-[#EAD4BA]/40 blur-3xl pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20 lg:py-24">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 lg:py-20">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             {/* Left Content (7 Cols) */}
-            <div className="lg:col-span-7 space-y-6 text-center lg:text-left z-10">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 border border-[#EADBCE] text-xs font-semibold text-[#B88E3E] uppercase tracking-widest shadow-sm">
+            <div className="lg:col-span-7 space-y-5 text-center lg:text-left z-10">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 border border-[#EADBCE] text-xs font-semibold text-[#B88E3E] uppercase tracking-widest shadow-sm">
                 <Sparkles className="w-3.5 h-3.5 text-[#E89A97]" />
-                <span>NOOR STUDIO Couture Edition</span>
+                <span>NOOR STUDIO • {currentHero.tag}</span>
               </div>
 
               <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold text-[#1F1C1A] leading-[1.15] tracking-tight">
-                Discover Your <br className="hidden sm:block" />
-                <span className="italic font-normal text-[#B88E3E]">Signature Style.</span>
+                Wear Your Elegance, <br className="hidden sm:block" />
+                <span className="italic font-normal text-[#B88E3E]">Style of Excellence.</span>
               </h1>
 
               <p className="text-xs sm:text-sm text-[#5A524C] leading-relaxed max-w-xl mx-auto lg:mx-0">
-                Immerse yourself in authentic Pakistani women&apos;s haute couture. Hand-embossed velvet shawls,
-                ethereal organza peshwas, and ready-to-wear luxury lawn stitched to sublime perfection with Cash on Delivery nationwide.
+                Discover bespoke Pakistani haute couture from Iznik, Maria.B, Heer, and Breeze. Handcrafted zardozi, ethereal organza dupattas, and ready-to-wear luxury lawn stitched to sublime perfection with Cash on Delivery across Pakistan.
               </p>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">
                 <button
-                  onClick={() => onNavigateToShop(null)}
+                  onClick={() => onNavigateToShop(currentHero.category)}
                   className="w-full sm:w-auto py-3.5 px-8 rounded-xl bg-[#1F1C1A] hover:bg-[#B88E3E] text-white text-xs sm:text-sm font-semibold uppercase tracking-wider transition shadow-lg flex items-center justify-center gap-2"
                 >
                   <ShoppingBag className="w-4 h-4 text-[#EADBCE]" />
-                  <span>Shop Collections</span>
+                  <span>Shop Featured Couture</span>
                 </button>
                 <button
                   onClick={() => onNavigateToShop('New Arrivals')}
@@ -73,30 +131,65 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
                 </button>
               </div>
 
-              {/* Quick helpline info */}
-              <p className="text-[11px] text-[#8C827A] pt-2">
-                Need phone assistance? Call customer helpline{' '}
-                <a href="tel:03284454746" className="font-bold text-[#1F1C1A] underline">
-                  03284454746
+              {/* Direct Helpline & WhatsApp Info */}
+              <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs text-[#7A7169]">
+                <a
+                  href="tel:03284454746"
+                  className="flex items-center gap-1.5 hover:text-[#B88E3E] font-medium"
+                >
+                  <PhoneCall className="w-3.5 h-3.5 text-[#B88E3E]" />
+                  <span>Helpline: <strong>03284454746</strong></span>
                 </a>
-              </p>
+                <span className="hidden sm:inline text-gray-300">•</span>
+                <a
+                  href="https://wa.me/923284454746"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-emerald-700 hover:text-emerald-800 font-semibold"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  <span>Instant WhatsApp Order</span>
+                </a>
+              </div>
+
+              {/* Interactive Slide Pills */}
+              <div className="pt-3 flex items-center justify-center lg:justify-start gap-2">
+                {HERO_SLIDES.map((slide, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveSlide(idx)}
+                    className={`text-left px-3 py-1.5 rounded-lg border transition-all text-[11px] ${
+                      idx === activeSlide
+                        ? 'border-[#B88E3E] bg-white shadow-sm font-bold text-[#1F1C1A]'
+                        : 'border-[#D9CCC2]/70 bg-white/60 hover:bg-white text-[#7A7169]'
+                    }`}
+                  >
+                    <span>0{idx + 1}. {slide.title.split(' ')[0]}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Right Hero Images Composition (5 Cols) */}
             <div className="lg:col-span-5 relative flex justify-center">
               <div className="relative w-full max-w-sm aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl border-4 border-white bg-[#F7F4EE]">
                 <img
-                  src="https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=1000&auto=format&fit=crop"
-                  alt="NOOR STUDIO Pakistani Fashion Model"
-                  className="w-full h-full object-cover object-top"
+                  src={currentHero.image}
+                  alt={currentHero.title}
+                  className="w-full h-full object-cover object-top transition duration-700 ease-in-out"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
                 <div className="absolute bottom-5 left-5 right-5 text-white">
-                  <span className="text-[10px] uppercase font-bold tracking-widest text-[#EADBCE]">
-                    Signature Bridal & Pret
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-[#EADBCE] bg-black/40 px-2 py-0.5 rounded backdrop-blur-sm">
+                    {currentHero.subtitle}
                   </span>
-                  <p className="font-serif text-lg font-bold">Zunaira Raw Silk 3-Piece</p>
-                  <p className="text-xs text-[#EADBCE] font-semibold mt-0.5">Rs. 9,950 (Special Drop)</p>
+                  <p className="font-serif text-lg sm:text-xl font-bold mt-1.5">{currentHero.title}</p>
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-sm font-bold text-[#EADBCE]">{currentHero.price}</p>
+                    <span className="text-[10px] font-semibold bg-emerald-500 text-white px-2 py-0.5 rounded-full">
+                      Ready to Ship
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -106,11 +199,38 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
                   <Sparkles className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="font-serif text-xs font-bold text-[#1F1C1A]">100% Original Pakistani Fabric</p>
-                  <p className="text-[10px] text-[#7A7169]">Fine Lawn • Pure Chiffon • Velvet</p>
+                  <p className="font-serif text-xs font-bold text-[#1F1C1A]">100% Authentic Designer Ensembles</p>
+                  <p className="text-[10px] text-[#7A7169]">Lawn • Chiffon • Rice Karandi • Khaddar</p>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* DESIGNER BRANDS TICKER */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="p-4 rounded-2xl bg-white border border-[#EADBCE] shadow-sm flex flex-col md:flex-row items-center justify-between gap-3 text-center md:text-left">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#B88E3E]" />
+            <span className="font-serif text-xs font-bold text-[#1F1C1A] uppercase tracking-wider">
+              Featured Designer Houses:
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs font-medium text-[#7A7169]">
+            <span className="hover:text-[#B88E3E] font-semibold">MARIA.B</span>
+            <span className="text-gray-300">•</span>
+            <span className="hover:text-[#B88E3E] font-semibold">IZNIK</span>
+            <span className="text-gray-300">•</span>
+            <span className="hover:text-[#B88E3E] font-semibold">HEER COLLECTION</span>
+            <span className="text-gray-300">•</span>
+            <span className="hover:text-[#B88E3E] font-semibold">BREEZE KARANDI</span>
+            <span className="text-gray-300">•</span>
+            <span className="hover:text-[#B88E3E] font-semibold">ETHNIC SILK</span>
+            <span className="text-gray-300">•</span>
+            <span className="hover:text-[#B88E3E] font-semibold">MORASHI KHADDAR</span>
+            <span className="text-gray-300">•</span>
+            <span className="hover:text-[#B88E3E] font-semibold">ZESH CO-ORD</span>
           </div>
         </div>
       </section>
@@ -180,22 +300,22 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
           </button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2.5 sm:gap-4">
           {categories.map((cat) => (
             <div
               key={cat.id}
               onClick={() => onNavigateToShop(cat.name)}
-              className="group cursor-pointer flex flex-col items-center text-center space-y-2.5"
+              className="group cursor-pointer flex flex-col items-center text-center space-y-2"
             >
               <div className="relative w-full aspect-[3/4] rounded-xl overflow-hidden bg-[#F7F4EE] border border-[#EADBCE] group-hover:border-[#B88E3E] group-hover:shadow-md transition duration-300">
                 <img
-                  src={cat.image || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=400'}
+                  src={cat.image || '/assets/aistudio/MARIA.B_ONE_OF_LUXURIOUS_COLLECTION_e659eca1.jpeg'}
                   alt={cat.name}
                   className="w-full h-full object-cover object-top transition duration-500 group-hover:scale-108"
                 />
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition" />
+                <div className="absolute inset-0 bg-black/15 group-hover:bg-black/5 transition" />
               </div>
-              <span className="font-serif text-xs sm:text-sm font-bold text-[#1F1C1A] group-hover:text-[#B88E3E] transition">
+              <span className="font-serif text-[11px] sm:text-xs font-bold text-[#1F1C1A] group-hover:text-[#B88E3E] transition leading-tight">
                 {cat.name}
               </span>
             </div>
@@ -225,6 +345,54 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
 
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {newArrivals.map((product) => (
+            <ProductCard key={product.id} product={product} onSelect={onSelectProduct} />
+          ))}
+        </div>
+      </section>
+
+      {/* INTERACTIVE SEASONAL & FESTIVE CURATION (CATCHY SHOWCASE) */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 pb-4 border-b border-[#EADBCE] gap-4">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FAF8F5] border border-[#B88E3E] text-[10px] font-bold text-[#B88E3E] uppercase tracking-wider mb-1">
+              <Sparkles className="w-3 h-3" />
+              <span>Live Stock Availability</span>
+            </div>
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A]">
+              Seasonal Trends & Ready-to-Ship
+            </h2>
+            <p className="text-xs text-[#7A7169] mt-1">
+              Select your preferred season or occasion to view authentic designer pieces in stock.
+            </p>
+          </div>
+
+          {/* Interactive Season Switcher Tabs */}
+          <div className="flex flex-wrap items-center gap-2">
+            {[
+              { id: 'all', label: 'All Designs' },
+              { id: 'summer', label: '☀️ Summer Lawn' },
+              { id: 'winter', label: '❄️ Winter Khaddar' },
+              { id: 'formal', label: '👑 Formal & Wedding' },
+              { id: 'sale', label: '🔥 Festive Sale' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveSeasonTab(tab.id as any)}
+                className={`py-1.5 px-3 rounded-full text-xs font-semibold transition-all ${
+                  activeSeasonTab === tab.id
+                    ? 'bg-[#1F1C1A] text-white shadow-md'
+                    : 'bg-[#F4EBE1] hover:bg-[#EADBCE] text-[#4A423D]'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tab products grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          {tabFilteredProducts.map((product) => (
             <ProductCard key={product.id} product={product} onSelect={onSelectProduct} />
           ))}
         </div>
@@ -384,33 +552,33 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
           <h3 className="font-serif text-2xl font-bold text-[#1F1C1A]">Styled by You</h3>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100 shadow-sm group">
             <img
-              src="https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=600"
-              alt="NOOR STUDIO Lookbook"
-              className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
+              src="/assets/aistudio/MOST_ELEGANT_OUTFITT_BY_IZNIK__3__b0971e8e.jpeg"
+              alt="NOOR STUDIO Iznik Chiffon"
+              className="w-full h-full object-cover object-top transition duration-500 group-hover:scale-105"
             />
           </div>
           <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100 shadow-sm group">
             <img
-              src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=600"
-              alt="NOOR STUDIO Lookbook"
-              className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
+              src="/assets/aistudio/Zesh_Essential_Co-ord_Printed_Silk_2PC_f1593680.jpeg"
+              alt="NOOR STUDIO Silk Co-Ord"
+              className="w-full h-full object-cover object-top transition duration-500 group-hover:scale-105"
             />
           </div>
           <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100 shadow-sm group">
             <img
-              src="https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?q=80&w=600"
-              alt="NOOR STUDIO Lookbook"
-              className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
+              src="/assets/aistudio/MARIA_B_COUTURE_COLLECTION_48007866.jpeg"
+              alt="NOOR STUDIO Maria.B Couture"
+              className="w-full h-full object-cover object-top transition duration-500 group-hover:scale-105"
             />
           </div>
           <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100 shadow-sm group">
             <img
-              src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=600"
-              alt="NOOR STUDIO Lookbook"
-              className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
+              src="/assets/aistudio/SILK_COLLECTION_2026_e0cd6ab7.jpeg"
+              alt="NOOR STUDIO Silk Pret"
+              className="w-full h-full object-cover object-top transition duration-500 group-hover:scale-105"
             />
           </div>
         </div>

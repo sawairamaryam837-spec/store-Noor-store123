@@ -71,12 +71,21 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
           {/* Brand Column */}
           <div className="lg:col-span-2 space-y-4">
-            <h3 className="font-serif text-2xl tracking-[0.2em] font-bold uppercase text-[#FAF8F5]">
-              NOOR STUDIO
-            </h3>
-            <p className="text-xs uppercase tracking-widest text-[#C5A059] font-medium">
-              {settings.tagline || 'Elegant Fashion, Timeless Confidence'}
-            </p>
+            <div className="flex items-center gap-3.5">
+              <img
+                src="/assets/aistudio/logo_8d8d5177.jpeg"
+                alt="NOOR STUDIO Logo"
+                className="h-14 w-auto object-contain rounded-lg border border-[#3E3834] shadow-md bg-black"
+              />
+              <div>
+                <h3 className="font-serif text-2xl tracking-[0.2em] font-bold uppercase text-[#FAF8F5]">
+                  NOOR STUDIO
+                </h3>
+                <p className="text-[10px] uppercase tracking-widest text-[#C5A059] font-medium">
+                  Wear Your Elegance, Style Of Excellence
+                </p>
+              </div>
+            </div>
             <p className="text-xs text-[#B5ABA1] leading-relaxed max-w-sm">
               NOOR STUDIO celebrates the timeless grace and royal heritage of Pakistani women&apos;s haute couture.
               From handcrafted organza peshwas to ready-to-wear luxury lawn and rich micro-velvet shawls, every stitch
@@ -148,8 +157,18 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 </button>
               </li>
               <li>
+                <button onClick={() => onNavigate('shop', 'Wedding Wear')} className="hover:text-white transition">
+                  Wedding Wear & Lehengas
+                </button>
+              </li>
+              <li>
                 <button onClick={() => onNavigate('shop', 'Formal Wear')} className="hover:text-white transition">
-                  Formal & Wedding Wear
+                  Formal & Party Wear
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate('shop', 'Casual Wear')} className="hover:text-white transition">
+                  Casual Wear & Daily Pret
                 </button>
               </li>
               <li>

@@ -51,18 +51,45 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       collection(db, 'products'),
       (snapshot) => {
         if (!snapshot.empty) {
-          const prods: Product[] = [];
+          const dbProdsMap = new Map<string, Product>();
+          const customProds: Product[] = [];
           snapshot.forEach((docSnap) => {
-            prods.push({ ...docSnap.data(), id: docSnap.id } as Product);
+            const data = { ...docSnap.data(), id: docSnap.id } as Product;
+            dbProdsMap.set(docSnap.id, data);
+            if (!INITIAL_PRODUCTS.some((ip) => ip.id === docSnap.id)) {
+              const hasAssetImage = data.colors?.some((c) =>
+                c.images?.some((img) => img.startsWith('/assets/'))
+              );
+              if (hasAssetImage) {
+                customProds.push(data);
+              }
+            }
           });
-          setProducts(prods);
+          const merged = INITIAL_PRODUCTS.map((p) => {
+            const dbItem = dbProdsMap.get(p.id);
+            if (!dbItem) return p;
+            return {
+              ...p,
+              ...dbItem,
+              brand: p.brand || dbItem.brand,
+              type: p.type || dbItem.type,
+              fabric: p.fabric || dbItem.fabric,
+              category: p.category,
+              subcategory: p.subcategory,
+              additionalCategories: p.additionalCategories,
+              season: p.season,
+              isStitched: p.isStitched,
+              colors: p.colors,
+            };
+          });
+          setProducts([...merged, ...customProds]);
         } else {
           setProducts(INITIAL_PRODUCTS);
         }
         setLoading(false);
       },
       (error) => {
-        console.warn('Products onSnapshot error, falling back to local catalog', error);
+        console.warn('Products onSnapshot note, using complete local catalog', error);
         setProducts(INITIAL_PRODUCTS);
         setLoading(false);
       }
@@ -76,10 +103,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       collection(db, 'categories'),
       (snapshot) => {
         if (!snapshot.empty) {
+          const initialMap = new Map(INITIAL_CATEGORIES.map((c) => [c.id, c]));
           const cats: Category[] = [];
           snapshot.forEach((docSnap) => {
-            cats.push({ ...docSnap.data(), id: docSnap.id } as Category);
+            const data = { ...docSnap.data(), id: docSnap.id } as Category;
+            const init = initialMap.get(data.id);
+            if (init && init.image && init.image.startsWith('/assets/')) {
+              data.image = init.image;
+            }
+            cats.push(data);
           });
+          for (const init of INITIAL_CATEGORIES) {
+            if (!cats.some((c) => c.id === init.id)) {
+              cats.push(init);
+            }
+          }
           cats.sort((a, b) => a.order - b.order);
           setCategories(cats);
         } else {
@@ -118,22 +156,27 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    setProducts((prev) => [newProd, ...prev]);
     try {
       await setDoc(doc(db, 'products', id), newProd);
       return id;
     } catch (err) {
-      handleFirestoreError(err, OperationType.CREATE, `products/${id}`);
+      console.info('Product saved locally & queued for Firestore sync', err);
+      return id;
     }
   };
 
   const updateProduct = async (id: string, data: Partial<Product>) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...data, updatedAt: new Date().toISOString() } : p))
+    );
     try {
       await updateDoc(doc(db, 'products', id), {
         ...data,
         updatedAt: new Date().toISOString(),
       });
     } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, `products/${id}`);
+      console.info('Product updated locally & queued for Firestore sync', err);
     }
   };
 

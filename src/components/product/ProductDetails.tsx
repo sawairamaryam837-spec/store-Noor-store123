@@ -115,7 +115,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({
 
   const currentGallery = activeColor?.images && activeColor.images.length > 0
     ? activeColor.images
-    : ['https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=1000'];
+    : ['/assets/aistudio/weddingseason__3__6ca9845d.jpeg'];
 
   const mainImage = currentGallery[activeImageIndex] || currentGallery[0];
 
@@ -309,11 +309,23 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({
         {/* Product Info & Variations (5 Cols) */}
         <div className="lg:col-span-5 flex flex-col justify-between space-y-6">
           <div>
-            {/* Category & SKU */}
-            <div className="flex items-center justify-between text-xs text-[#8C827A] mb-1.5">
-              <span className="uppercase tracking-widest font-semibold text-[#B88E3E]">
-                {product.category} {product.subcategory ? `| ${product.subcategory}` : ''}
-              </span>
+            {/* Category & Brand & SKU */}
+            <div className="flex items-center justify-between text-xs text-[#8C827A] mb-2 flex-wrap gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {product.brand && (
+                  <span className="px-2 py-0.5 rounded bg-[#1F1C1A] text-[#FAF8F5] font-bold text-xs tracking-wider uppercase shadow-sm">
+                    {product.brand}
+                  </span>
+                )}
+                {product.type && (
+                  <span className="px-2 py-0.5 rounded bg-[#C5A059]/20 text-[#8B6B23] font-bold text-xs uppercase border border-[#C5A059]/40">
+                    {product.type}
+                  </span>
+                )}
+                <span className="uppercase tracking-widest font-semibold text-[#B88E3E]">
+                  {product.category} {product.subcategory ? `| ${product.subcategory}` : ''}
+                </span>
+              </div>
               <span className="font-mono text-[11px] text-[#A89D93]">
                 SKU: {activeColor.sku || product.sku}
               </span>
@@ -518,6 +530,21 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({
               >
                 <span>⚡ Buy Now with Cash on Delivery</span>
               </button>
+
+              {/* Direct WhatsApp Order / Restock Inquiry Button */}
+              <a
+                href={`https://wa.me/923284454746?text=${encodeURIComponent(
+                  `Assalam-o-Alaikum NOOR STUDIO, I am interested in: ${product.name} (Color: ${activeColor.name}, Size: ${selectedSize || 'Not selected'}, Price: Rs. ${effectivePrice.toLocaleString()}). ${
+                    isOutOfStock ? 'Since this is currently Sold Out, please let me know if a restock or pre-order is available.' : 'Please confirm order availability.'
+                  }`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 px-4 rounded-lg bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-semibold flex items-center justify-center gap-2 transition shadow-sm"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>{isOutOfStock ? 'Request Restock / Pre-Order on WhatsApp' : 'Direct Order via WhatsApp (03284454746)'}</span>
+              </a>
             </div>
 
             {/* Trust & Delivery Info */}
@@ -658,7 +685,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({
               >
                 <div className="aspect-[3/4] bg-[#F7F4EE] overflow-hidden">
                   <img
-                    src={p.colors[0]?.images[0] || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=600'}
+                    src={p.colors[0]?.images[0] || '/assets/aistudio/weddingseason__3__6ca9845d.jpeg'}
                     alt={p.name}
                     className="w-full h-full object-cover object-top transition duration-500 group-hover:scale-105"
                   />

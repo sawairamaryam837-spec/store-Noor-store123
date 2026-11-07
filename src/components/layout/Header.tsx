@@ -124,13 +124,23 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* NOOR STUDIO Brand Logo */}
-          <div className="flex flex-col items-center sm:items-start cursor-pointer" onClick={() => handleNavClick('home')}>
-            <span className="font-serif text-2xl sm:text-3xl lg:text-4xl tracking-[0.2em] font-semibold text-[#1F1C1A] uppercase">
-              NOOR STUDIO
-            </span>
-            <span className="text-[10px] uppercase tracking-[0.3em] text-[#8C827A] -mt-1 font-medium hidden sm:block">
-              {settings.tagline || 'Elegant Fashion, Timeless Confidence'}
-            </span>
+          <div
+            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group"
+            onClick={() => handleNavClick('home')}
+          >
+            <img
+              src="/assets/aistudio/logo_8d8d5177.jpeg"
+              alt="NOOR STUDIO"
+              className="h-10 sm:h-12 w-auto object-contain rounded-lg shadow-sm border border-[#EADBCE] group-hover:scale-105 transition-transform duration-300 bg-black"
+            />
+            <div className="flex flex-col items-start">
+              <span className="font-serif text-lg sm:text-2xl lg:text-3xl tracking-[0.18em] font-bold text-[#1F1C1A] uppercase leading-tight">
+                NOOR STUDIO
+              </span>
+              <span className="text-[9px] uppercase tracking-[0.25em] text-[#8C827A] font-medium hidden sm:block">
+                Wear Your Elegance, Style Of Excellence
+              </span>
+            </div>
           </div>
 
           {/* Desktop Search Bar */}
@@ -331,12 +341,30 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           <button
+            onClick={() => handleNavClick('shop', 'Wedding Wear')}
+            className={`hover:text-[#B88E3E] transition py-1 relative ${
+              selectedCategory === 'Wedding Wear' ? 'text-[#B88E3E] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#B88E3E]' : ''
+            }`}
+          >
+            Wedding Wear
+          </button>
+
+          <button
             onClick={() => handleNavClick('shop', 'Formal Wear')}
             className={`hover:text-[#B88E3E] transition py-1 relative ${
               selectedCategory === 'Formal Wear' ? 'text-[#B88E3E] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#B88E3E]' : ''
             }`}
           >
             Formal Wear
+          </button>
+
+          <button
+            onClick={() => handleNavClick('shop', 'Casual Wear')}
+            className={`hover:text-[#B88E3E] transition py-1 relative ${
+              selectedCategory === 'Casual Wear' ? 'text-[#B88E3E] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#B88E3E]' : ''
+            }`}
+          >
+            Casual Wear
           </button>
 
           <button
@@ -472,10 +500,24 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             <button
+              onClick={() => handleNavClick('shop', 'Wedding Wear')}
+              className="w-full text-left py-2 border-b border-[#EADBCE]/50 flex justify-between"
+            >
+              <span>Wedding Wear</span>
+              <ArrowRight className="w-4 h-4 text-[#A89D93]" />
+            </button>
+            <button
               onClick={() => handleNavClick('shop', 'Formal Wear')}
               className="w-full text-left py-2 border-b border-[#EADBCE]/50 flex justify-between"
             >
               <span>Formal Wear</span>
+              <ArrowRight className="w-4 h-4 text-[#A89D93]" />
+            </button>
+            <button
+              onClick={() => handleNavClick('shop', 'Casual Wear')}
+              className="w-full text-left py-2 border-b border-[#EADBCE]/50 flex justify-between"
+            >
+              <span>Casual Wear</span>
               <ArrowRight className="w-4 h-4 text-[#A89D93]" />
             </button>
             <button

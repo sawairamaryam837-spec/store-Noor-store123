@@ -99,10 +99,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         </button>
 
         {/* Brand Header */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-6 flex flex-col items-center">
+          <img
+            src="/assets/aistudio/logo_8d8d5177.jpeg"
+            alt="NOOR STUDIO"
+            className="h-16 w-auto object-contain rounded-lg shadow-md mb-2 border border-[#EADBCE] bg-black"
+          />
           <span className="font-serif text-2xl tracking-[0.2em] font-bold text-[#1F1C1A] uppercase">
             NOOR STUDIO
           </span>
+          <p className="text-[10px] uppercase tracking-widest text-[#B88E3E] font-medium mt-0.5">
+            Wear Your Elegance, Style Of Excellence
+          </p>
           <p className="text-xs text-[#8C827A] mt-1">
             {mode === 'signin' && 'Sign in to access your orders and saved wishlist'}
             {mode === 'signup' && 'Create your NOOR STUDIO customer account'}

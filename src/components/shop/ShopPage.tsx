@@ -75,7 +75,49 @@ export const ShopPage: React.FC<ShopPageProps> = ({
           if (!p.salePrice || p.salePrice >= p.regularPrice) return false;
         } else if (selectedCategory === 'New Arrivals') {
           if (!p.isNewArrival && p.category !== 'New Arrivals') return false;
-        } else if (p.category !== selectedCategory) {
+        } else if (selectedCategory === 'Summer Wear') {
+          const isSummer =
+            p.category === 'Summer Wear' ||
+            p.season === 'Summer' ||
+            p.additionalCategories?.includes('Summer Wear');
+          if (!isSummer) return false;
+        } else if (selectedCategory === 'Winter Wear') {
+          const isWinter =
+            p.category === 'Winter Wear' ||
+            p.season === 'Winter' ||
+            p.additionalCategories?.includes('Winter Wear');
+          if (!isWinter) return false;
+        } else if (selectedCategory === 'Wedding Wear') {
+          const isWedding =
+            p.category === 'Wedding Wear' ||
+            p.additionalCategories?.includes('Wedding Wear') ||
+            p.name.toLowerCase().includes('wedding') ||
+            p.name.toLowerCase().includes('lehenga');
+          if (!isWedding) return false;
+        } else if (selectedCategory === 'Formal Wear') {
+          const isFormal =
+            p.category === 'Formal Wear' ||
+            p.additionalCategories?.includes('Formal Wear');
+          if (!isFormal) return false;
+        } else if (selectedCategory === 'Stitched') {
+          const isStitched =
+            p.category === 'Stitched' ||
+            p.isStitched === true ||
+            p.additionalCategories?.includes('Stitched');
+          if (!isStitched) return false;
+        } else if (selectedCategory === 'Unstitched') {
+          const isUnstitched =
+            p.category === 'Unstitched' ||
+            p.isStitched === false ||
+            p.additionalCategories?.includes('Unstitched');
+          if (!isUnstitched) return false;
+        } else if (selectedCategory === 'Casual Wear') {
+          const isCasual =
+            p.category === 'Casual Wear' ||
+            p.category === 'Casual & Semi-Formal' ||
+            p.additionalCategories?.includes('Casual Wear');
+          if (!isCasual) return false;
+        } else if (p.category !== selectedCategory && !p.additionalCategories?.includes(selectedCategory)) {
           return false;
         }
       }
@@ -86,7 +128,7 @@ export const ShopPage: React.FC<ShopPageProps> = ({
       }
 
       // Sale filter
-      if (onSaleOnly && (!p.salePrice || p.salePrice >= p.regularPrice)) {
+      if (onSaleOnly && (!p.salePrice || p.regularPrice <= (p.salePrice || 0))) {
         return false;
       }
 
@@ -125,7 +167,9 @@ export const ShopPage: React.FC<ShopPageProps> = ({
         const matchesDesc = p.description.toLowerCase().includes(q);
         const matchesFabric = p.fabric.toLowerCase().includes(q);
         const matchesCat = p.category.toLowerCase().includes(q);
-        if (!matchesName && !matchesDesc && !matchesFabric && !matchesCat) {
+        const matchesBrand = p.brand ? p.brand.toLowerCase().includes(q) : false;
+        const matchesType = p.type ? p.type.toLowerCase().includes(q) : false;
+        if (!matchesName && !matchesDesc && !matchesFabric && !matchesCat && !matchesBrand && !matchesType) {
           return false;
         }
       }

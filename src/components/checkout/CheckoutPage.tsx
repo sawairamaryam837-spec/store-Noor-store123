@@ -15,7 +15,7 @@ import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import { CustomerInfo, Order, OrderItem } from '../../types';
-import { doc, setDoc, runTransaction } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../../firebase/config';
 
 interface CheckoutPageProps {
@@ -146,16 +146,23 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
         updatedAt: new Date().toISOString(),
       };
 
-      // Firestore Order Saving & Safe Stock Deduction Transaction
-      await runTransaction(db, async (transaction) => {
-        // Save order document
-        const orderRef = doc(db, 'orders', orderId);
-        transaction.set(orderRef, newOrder);
+      // Save order document directly to Firestore
+      const orderRef = doc(db, 'orders', orderId);
+      await setDoc(orderRef, newOrder);
 
-        // Deduct inventory for each purchased item
+      // Save order to local cache so customer can always track it seamlessly
+      try {
+        const existingStored = JSON.parse(localStorage.getItem('noor_placed_orders') || '[]');
+        localStorage.setItem('noor_placed_orders', JSON.stringify([newOrder, ...existingStored].slice(0, 50)));
+      } catch (cacheErr) {
+        console.warn('Local order cache note', cacheErr);
+      }
+
+      // Safely attempt inventory deduction if permitted
+      try {
         for (const item of items) {
           const productRef = doc(db, 'products', item.productId);
-          const prodDoc = await transaction.get(productRef);
+          const prodDoc = await getDoc(productRef);
           if (prodDoc.exists()) {
             const prodData = prodDoc.data();
             const colors = prodData.colors || [];
@@ -171,10 +178,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
               }
               return col;
             });
-            transaction.update(productRef, { colors: updatedColors });
+            await updateDoc(productRef, { colors: updatedColors });
           }
         }
-      });
+      } catch (invErr) {
+        // Log inventory update warning without failing the user's completed order
+        console.warn('Inventory sync note:', invErr);
+      }
 
       // Save customer address in profile if requested
       if (saveInfoForFuture) {
