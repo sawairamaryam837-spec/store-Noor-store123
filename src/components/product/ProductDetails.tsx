@@ -193,7 +193,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({
       setReviewComment('');
       setReviewName('');
     } catch (err) {
-      console.error('Review submit error', err);
+      console.warn('Review submit note:', err);
     } finally {
       setSubmittingReview(false);
     }

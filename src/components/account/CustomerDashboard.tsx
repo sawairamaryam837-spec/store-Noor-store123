@@ -140,7 +140,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
         }
       }
     } catch (err) {
-      console.error('Tracking query error', err);
+      console.warn('Tracking query note:', err);
       setTrackError('Unable to retrieve tracking information at this moment. Please reach out via WhatsApp at +923284454746.');
     } finally {
       setIsSearchingTrack(false);

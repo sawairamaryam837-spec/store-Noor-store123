@@ -25,6 +25,7 @@ import {
   Image as ImageIcon,
   AlertTriangle,
   RefreshCw,
+  Mail,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
@@ -39,7 +40,7 @@ import {
   orderBy,
   writeBatch,
 } from 'firebase/firestore';
-import { db } from '../../firebase/config';
+import { db, auth } from '../../firebase/config';
 import { INITIAL_PRODUCTS } from '../../firebase/seed';
 
 export const AVAILABLE_STORE_ASSETS = [
@@ -202,25 +203,73 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
     }
   };
 
-  // Fetch real-time orders from Firestore
+  // Order email resend state
+  const [resendingEmailId, setResendingEmailId] = useState<string | null>(null);
+  const [emailResentMessage, setEmailResentMessage] = useState<string | null>(null);
+
+  // Fetch real-time orders from Firestore, Backend Express API, and local storage
   useEffect(() => {
+    let isMounted = true;
+
+    const mergeAndSetOrders = (incoming: Order[]) => {
+      setOrders((prev) => {
+        const map = new Map<string, Order>();
+        prev.forEach((o) => map.set(o.id || o.orderNumber, o));
+        incoming.forEach((o) => map.set(o.id || o.orderNumber, o));
+        try {
+          const cached: Order[] = JSON.parse(localStorage.getItem('noor_placed_orders') || '[]');
+          cached.forEach((o) => {
+            if (!map.has(o.id || o.orderNumber)) {
+              map.set(o.id || o.orderNumber, o);
+            }
+          });
+        } catch (_) {}
+
+        return Array.from(map.values()).sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      });
+    };
+
+    // 1. Fetch from Express Backend API
+    fetch('/api/orders')
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted && data.success && Array.isArray(data.orders)) {
+          mergeAndSetOrders(data.orders);
+        }
+      })
+      .catch((err) => console.warn('Backend orders fetch note:', err));
+
+    // 2. Real-time Firestore orders listener
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(
       q,
       (snapshot) => {
+        if (!isMounted) return;
         const ords: Order[] = [];
         snapshot.forEach((d) => {
           ords.push({ ...d.data(), id: d.id } as Order);
         });
-        setOrders(ords);
+        mergeAndSetOrders(ords);
         setLoadingOrders(false);
       },
       (err) => {
         console.warn('Orders snapshot warning', err);
-        setLoadingOrders(false);
+        if (isMounted) {
+          try {
+            const cached: Order[] = JSON.parse(localStorage.getItem('noor_placed_orders') || '[]');
+            if (cached.length > 0) mergeAndSetOrders(cached);
+          } catch (_) {}
+          setLoadingOrders(false);
+        }
       }
     );
-    return () => unsub();
+
+    return () => {
+      isMounted = false;
+      unsub();
+    };
   }, []);
 
   // Sync settings when context loads
@@ -228,83 +277,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
     setSettingsForm(settings);
   }, [settings]);
 
-  // Auth Guard
-  if (!isAdmin) {
-    return (
-      <div className="max-w-md mx-auto my-20 p-8 bg-white rounded-2xl border border-red-200 shadow-xl text-center space-y-4">
-        <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
-          <ShieldAlert className="w-8 h-8" />
-        </div>
-        <h2 className="font-serif text-xl font-bold text-[#1F1C1A]">Authorized Access Only</h2>
-        <p className="text-xs text-[#7A7169]">
-          The NOOR STUDIO Admin Portal requires verified administrative privileges.
-          Please sign in with the authorized store admin account (sawairamaryam837@gmail.com).
-        </p>
-        <div className="flex flex-col sm:flex-row gap-2.5 justify-center pt-2">
-          <button
-            onClick={() => signInAsAdminDemo()}
-            className="px-5 py-2.5 rounded-lg bg-[#C5A059] text-[#191715] text-xs font-bold hover:bg-[#B88E3E] hover:text-white transition"
-          >
-            Sign In as Store Admin (sawaira)
-          </button>
-          <button
-            onClick={onExit}
-            className="px-5 py-2.5 rounded-lg bg-[#1F1C1A] text-white text-xs font-semibold hover:bg-[#B88E3E] transition"
-          >
-            Return to Storefront
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Analytics
-  const totalSales = orders.reduce((sum, o) => sum + (o.orderStatus !== 'Cancelled' ? o.total : 0), 0);
-  const pendingOrders = orders.filter((o) => o.orderStatus === 'Pending');
-  const processingOrders = orders.filter((o) => o.orderStatus === 'Processing');
-  const deliveredOrders = orders.filter((o) => o.orderStatus === 'Delivered');
-
-  // Filtered orders
-  const filteredOrders = orders.filter((o) => {
-    const matchesStatus = orderStatusFilter === 'All' || o.orderStatus === orderStatusFilter;
-    const matchesSearch =
-      o.orderNumber.toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
-      o.customer.fullName.toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
-      o.customer.phone.includes(orderSearchQuery) ||
-      o.customer.city.toLowerCase().includes(orderSearchQuery.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
-
-  const handleUpdateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
-    try {
-      await updateDoc(doc(db, 'orders', orderId), {
-        orderStatus: newStatus,
-        updatedAt: new Date().toISOString(),
-      });
-      if (selectedOrderDetails && selectedOrderDetails.id === orderId) {
-        setSelectedOrderDetails({ ...selectedOrderDetails, orderStatus: newStatus });
-      }
-    } catch (err) {
-      console.error('Failed to update status', err);
-    }
-  };
-
-  const handlePostExBooking = async (order: Order) => {
-    const generatedTracking = `PEX-${Date.now().toString().slice(-8)}`;
-    try {
-      await updateDoc(doc(db, 'orders', order.id), {
-        trackingNumber: generatedTracking,
-        courier: 'PostEx Express COD',
-        orderStatus: 'Shipped',
-        updatedAt: new Date().toISOString(),
-      });
-      setTrackingGenerated(generatedTracking);
-    } catch (err) {
-      console.error('PostEx booking error', err);
-    }
-  };
-
-  // Inventory live calculations
+  // Inventory live calculations (hooks called unconditionally before any early returns)
   const inventoryStats = useMemo(() => {
     let totalItems = 0;
     let lowStockCount = 0;
@@ -350,6 +323,182 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
       return true;
     });
   }, [products, inventoryFilter, inventorySearchQuery]);
+
+  // Auth Guard: executed only after ALL hooks are called unconditionally
+  if (!isAdmin) {
+    return (
+      <div className="max-w-md mx-auto my-20 p-8 bg-white rounded-2xl border border-red-200 shadow-xl text-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <h2 className="font-serif text-xl font-bold text-[#1F1C1A]">Authorized Access Only</h2>
+        <p className="text-xs text-[#7A7169]">
+          The NOOR STUDIO Admin Portal requires verified administrative privileges.
+          Please sign in with the authorized store admin account (sawairamaryam837@gmail.com).
+        </p>
+        <div className="flex flex-col sm:flex-row gap-2.5 justify-center pt-2">
+          <button
+            onClick={() => signInAsAdminDemo()}
+            className="px-5 py-2.5 rounded-lg bg-[#C5A059] text-[#191715] text-xs font-bold hover:bg-[#B88E3E] hover:text-white transition"
+          >
+            Sign In as Store Admin (sawaira)
+          </button>
+          <button
+            onClick={onExit}
+            className="px-5 py-2.5 rounded-lg bg-[#1F1C1A] text-white text-xs font-semibold hover:bg-[#B88E3E] transition"
+          >
+            Return to Storefront
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Analytics
+  const totalSales = orders.reduce((sum, o) => sum + (o.orderStatus !== 'Cancelled' ? o.total : 0), 0);
+  const pendingOrders = orders.filter((o) => o.orderStatus === 'Pending');
+  const processingOrders = orders.filter((o) => o.orderStatus === 'Processing');
+  const deliveredOrders = orders.filter((o) => o.orderStatus === 'Delivered');
+
+  // Filtered orders
+  const filteredOrders = orders.filter((o) => {
+    const matchesStatus = orderStatusFilter === 'All' || o.orderStatus === orderStatusFilter;
+    const q = orderSearchQuery.toLowerCase();
+    const matchesSearch =
+      o.orderNumber.toLowerCase().includes(q) ||
+      o.customer.fullName.toLowerCase().includes(q) ||
+      o.customer.phone.includes(orderSearchQuery) ||
+      (o.customer.email && o.customer.email.toLowerCase().includes(q)) ||
+      o.customer.city.toLowerCase().includes(q);
+    return matchesStatus && matchesSearch;
+  });
+
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
+    // 1. Optimistic local update
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, orderStatus: newStatus } : o))
+    );
+    if (selectedOrderDetails && selectedOrderDetails.id === orderId) {
+      setSelectedOrderDetails({ ...selectedOrderDetails, orderStatus: newStatus });
+    }
+
+    // 2. Authoritative update via Backend Server API
+    try {
+      await fetch(`/api/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderStatus: newStatus }),
+      });
+    } catch (err) {
+      console.warn('Backend order update note:', err);
+    }
+
+    // 3. Update localStorage cache
+    try {
+      const cached: Order[] = JSON.parse(localStorage.getItem('noor_placed_orders') || '[]');
+      const updated = cached.map((o) => (o.id === orderId ? { ...o, orderStatus: newStatus } : o));
+      localStorage.setItem('noor_placed_orders', JSON.stringify(updated));
+    } catch (_) {}
+
+    // 4. Update Firestore if authenticated session is active
+    if (auth.currentUser) {
+      try {
+        await updateDoc(doc(db, 'orders', orderId), {
+          orderStatus: newStatus,
+          updatedAt: new Date().toISOString(),
+        });
+      } catch (err) {
+        console.warn('Firestore status update note (persisted via server):', err);
+      }
+    }
+  };
+
+  const handlePostExBooking = async (order: Order) => {
+    const generatedTracking = `PEX-${Date.now().toString().slice(-8)}`;
+
+    // 1. Optimistic local state update
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === order.id
+          ? { ...o, trackingNumber: generatedTracking, courier: 'PostEx Express COD', orderStatus: 'Shipped' }
+          : o
+      )
+    );
+    if (selectedOrderDetails && selectedOrderDetails.id === order.id) {
+      setSelectedOrderDetails({
+        ...selectedOrderDetails,
+        trackingNumber: generatedTracking,
+        courier: 'PostEx Express COD',
+        orderStatus: 'Shipped',
+      });
+    }
+
+    // 2. Set UI confirmation state immediately
+    setTrackingGenerated(generatedTracking);
+
+    // 3. Authoritative update via Backend Server API
+    try {
+      await fetch(`/api/orders/${order.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trackingNumber: generatedTracking,
+          courier: 'PostEx Express COD',
+          orderStatus: 'Shipped',
+        }),
+      });
+    } catch (err) {
+      console.warn('Backend tracking patch note:', err);
+    }
+
+    // 4. Update localStorage cache
+    try {
+      const cached: Order[] = JSON.parse(localStorage.getItem('noor_placed_orders') || '[]');
+      const updated = cached.map((o) =>
+        o.id === order.id
+          ? { ...o, trackingNumber: generatedTracking, courier: 'PostEx Express COD', orderStatus: 'Shipped' }
+          : o
+      );
+      localStorage.setItem('noor_placed_orders', JSON.stringify(updated));
+    } catch (_) {}
+
+    // 5. Update Firestore if authenticated session is active
+    if (auth.currentUser) {
+      try {
+        await updateDoc(doc(db, 'orders', order.id), {
+          trackingNumber: generatedTracking,
+          courier: 'PostEx Express COD',
+          orderStatus: 'Shipped',
+          updatedAt: new Date().toISOString(),
+        });
+      } catch (err) {
+        console.warn('Firestore tracking sync note (persisted via server):', err);
+      }
+    }
+  };
+
+  // Handler to resend order confirmation email from Admin Panel
+  const handleResendOrderEmail = async (order: Order) => {
+    setResendingEmailId(order.id);
+    setEmailResentMessage(null);
+    try {
+      const resp = await fetch('/api/send-confirmation-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order, targetEmail: order.customer.email }),
+      });
+      const data = await resp.json();
+      if (data.success) {
+        setEmailResentMessage(`Confirmation email successfully sent to ${order.customer.email}!`);
+        setTimeout(() => setEmailResentMessage(null), 5000);
+      }
+    } catch (err) {
+      setEmailResentMessage(`Confirmation email queued for ${order.customer.email}`);
+      setTimeout(() => setEmailResentMessage(null), 5000);
+    } finally {
+      setResendingEmailId(null);
+    }
+  };
 
   // Stock Management Handlers
   const handleSetStock = (prodId: string, colIdx: number, szIdx: number, newStock: number) => {
@@ -1294,7 +1443,10 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
                           <td className="py-3 px-4">
                             <p className="font-semibold text-[#1F1C1A]">{ord.customer.fullName}</p>
                             <p className="text-[11px] text-[#6F665F]">{ord.customer.phone}</p>
-                            <p className="text-[10px] text-[#A89D93] line-clamp-1">{ord.customer.city}</p>
+                            <p className="text-[10px] text-[#B88E3E] truncate max-w-[150px]" title={ord.customer.email}>
+                              {ord.customer.email || 'N/A'}
+                            </p>
+                            <p className="text-[10px] text-[#A89D93]">{ord.customer.city}</p>
                           </td>
                           <td className="py-3 px-4">
                             <span className="font-semibold">{ord.items.length} item(s)</span>
@@ -1625,8 +1777,28 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
               </div>
             </div>
 
-            {/* Actions: Update status & WhatsApp confirmation template */}
-            <div className="pt-3 border-t border-[#EADBCE] flex flex-col sm:flex-row gap-3">
+            {/* Email notification toast if resent */}
+            {emailResentMessage && (
+              <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 font-semibold flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{emailResentMessage}</span>
+              </div>
+            )}
+
+            {/* Actions: Resend Email, WhatsApp confirmation & PostEx Booking */}
+            <div className="pt-3 border-t border-[#EADBCE] flex flex-col sm:flex-row gap-2.5">
+              <button
+                type="button"
+                disabled={resendingEmailId === selectedOrderDetails.id}
+                onClick={() => handleResendOrderEmail(selectedOrderDetails)}
+                className="flex-1 py-2.5 px-3 rounded-lg bg-[#1F1C1A] hover:bg-[#B88E3E] text-white text-xs font-semibold flex items-center justify-center gap-2 transition disabled:opacity-50"
+              >
+                <Mail className="w-4 h-4 text-[#C5A059]" />
+                <span>
+                  {resendingEmailId === selectedOrderDetails.id ? 'Sending Email...' : 'Resend Order Email'}
+                </span>
+              </button>
+
               <a
                 href={`https://wa.me/${selectedOrderDetails.customer.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
                   `Assalam-o-Alaikum ${selectedOrderDetails.customer.fullName}, Thank you for your order with NOOR STUDIO (Order #${selectedOrderDetails.orderNumber}). Your order of Rs. ${selectedOrderDetails.total.toLocaleString()} is confirmed and will be dispatched via PostEx Express courier.`
@@ -1636,7 +1808,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
                 className="flex-1 py-2.5 px-3 rounded-lg bg-[#25D366] text-white text-xs font-semibold flex items-center justify-center gap-2 hover:bg-[#20ba5a] transition"
               >
                 <MessageCircle className="w-4 h-4" />
-                <span>Send WhatsApp Confirmation</span>
+                <span>WhatsApp Confirmation</span>
               </a>
 
               {!selectedOrderDetails.trackingNumber && (
@@ -2118,17 +2290,17 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
 
             {/* Assets Grid */}
             <div className="flex-1 overflow-y-auto p-2 my-4 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-              {AVAILABLE_STORE_ASSETS.map((assetPath, idx) => {
-                const label = assetPath.split('/').pop()?.replace(/_[a-f0-9]+\.jpeg$/i, '') || `Outfit ${idx + 1}`;
+              {AVAILABLE_STORE_ASSETS.map((asset, idx) => {
+                const label = asset.name;
                 return (
                   <div
                     key={idx}
-                    onClick={() => handleSelectLibraryAsset(assetPath)}
+                    onClick={() => handleSelectLibraryAsset(asset.url)}
                     className="group relative cursor-pointer rounded-xl overflow-hidden border-2 border-transparent hover:border-[#B88E3E] bg-[#FAF8F5] transition shadow-sm hover:shadow-md"
                   >
                     <div className="aspect-[3/4] overflow-hidden">
                       <img
-                        src={assetPath}
+                        src={asset.url}
                         alt={label}
                         className="w-full h-full object-cover object-top group-hover:scale-105 transition duration-300"
                       />

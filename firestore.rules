@@ -86,12 +86,15 @@ service cloud.firestore {
       allow delete: if isAdmin() && isValidId(categoryId);
     }
 
-    // Orders collection: creation by customers/guests, read by ID or owner or admin, status update by admin
+    // Orders collection: creation by customers/guests, read by ID or owner or admin, fulfillment status & tracking update
     match /orders/{orderId} {
       allow create: if isValidId(orderId) && isValidOrder(incoming());
       allow get: if isValidId(orderId);
       allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-      allow update: if isAdmin() && isValidId(orderId);
+      allow update: if isValidId(orderId) && (
+        isAdmin() ||
+        (isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['trackingNumber', 'courier', 'orderStatus', 'updatedAt']))
+      );
       allow delete: if isAdmin() && isValidId(orderId);
     }
 

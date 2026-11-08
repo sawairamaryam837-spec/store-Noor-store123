@@ -1,0 +1,29 @@
+[
+  {
+    "customer": {
+      "fullName": "Ayesha Khan",
+      "phone": "03001234567",
+      "email": "ayesha@example.com",
+      "address": "DHA Phase 5, Lahore",
+      "city": "Lahore"
+    },
+    "items": [
+      {
+        "productName": "Heer Organza Embroidered Lehenga",
+        "price": 7500,
+        "quantity": 1
+      }
+    ],
+    "subtotal": 7500,
+    "total": 7500,
+    "paymentMethod": "COD",
+    "id": "order_1794133914507_15",
+    "orderNumber": "NS-2026-70938",
+    "createdAt": "2026-11-08T10:31:54.507Z",
+    "updatedAt": "2026-11-08T10:31:58.209Z",
+    "paymentStatus": "Pending",
+    "orderStatus": "Shipped",
+    "courier": "PostEx Express COD",
+    "trackingNumber": "PEX-84454746"
+  }
+]
