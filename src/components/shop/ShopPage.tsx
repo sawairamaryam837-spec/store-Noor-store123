@@ -117,14 +117,32 @@ export const ShopPage: React.FC<ShopPageProps> = ({
             p.category === 'Casual & Semi-Formal' ||
             p.additionalCategories?.includes('Casual Wear');
           if (!isCasual) return false;
+        } else if (selectedCategory === 'Trousers & Shalwar') {
+          const isTrousersShalwar =
+            p.category === 'Trousers & Shalwar' ||
+            p.additionalCategories?.includes('Trousers & Shalwar') ||
+            p.subcategory === 'Trousers' ||
+            p.subcategory === 'Pajamas' ||
+            p.subcategory === 'Shalwar' ||
+            p.subcategory === 'Shalwar Kameez' ||
+            p.name.toLowerCase().includes('trouser') ||
+            p.name.toLowerCase().includes('pajama') ||
+            p.name.toLowerCase().includes('shalwar');
+          if (!isTrousersShalwar) return false;
         } else if (p.category !== selectedCategory && !p.additionalCategories?.includes(selectedCategory)) {
           return false;
         }
       }
 
-      // Subcategory filter
-      if (selectedSubcategory !== 'All' && p.subcategory !== selectedSubcategory) {
-        return false;
+      // Subcategory filter (flexible matching for piece count or bottom type)
+      if (selectedSubcategory !== 'All') {
+        const matchesSubcategory =
+          p.subcategory === selectedSubcategory ||
+          p.type?.toLowerCase().includes(selectedSubcategory.toLowerCase()) ||
+          p.name.toLowerCase().includes(selectedSubcategory.toLowerCase());
+        if (!matchesSubcategory) {
+          return false;
+        }
       }
 
       // Sale filter
@@ -338,6 +356,30 @@ export const ShopPage: React.FC<ShopPageProps> = ({
             </div>
           )}
 
+          {/* Trousers, Pajamas & Shalwar subcategories */}
+          {selectedCategory === 'Trousers & Shalwar' && (
+            <div className="pt-4 border-t border-[#F2ECE6]">
+              <label className="block text-xs font-bold text-[#1F1C1A] uppercase tracking-wider mb-2.5">
+                Type / Cut
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {['All', 'Trousers', 'Pajamas', 'Shalwar', 'Shalwar Kameez'].map((sub) => (
+                  <button
+                    key={sub}
+                    onClick={() => setSelectedSubcategory(sub)}
+                    className={`py-1 px-2.5 rounded-lg border text-xs font-medium transition ${
+                      selectedSubcategory === sub
+                        ? 'border-[#B88E3E] bg-[#F7F4EE] text-[#B88E3E] font-bold'
+                        : 'border-[#D9CCC2] text-[#5A524C] hover:border-[#B88E3E]'
+                    }`}
+                  >
+                    {sub}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Size Filter */}
           <div className="pt-4 border-t border-[#F2ECE6]">
             <label className="block text-xs font-bold text-[#1F1C1A] uppercase tracking-wider mb-2.5">
@@ -470,6 +512,61 @@ export const ShopPage: React.FC<ShopPageProps> = ({
               </select>
             </div>
           </div>
+
+          {/* Quick Subcategory Pills for Summer Wear & Winter Wear (1 Piece, 2 Piece, 3 Piece) */}
+          {(selectedCategory === 'Summer Wear' || selectedCategory === 'Winter Wear') && (
+            <div className="flex flex-wrap items-center gap-2 p-3 bg-[#FAF8F5] rounded-xl border border-[#EADBCE]">
+              <span className="text-xs font-bold text-[#1F1C1A] uppercase tracking-wider mr-1">
+                {selectedCategory === 'Summer Wear' ? '☀️ Summer Pieces:' : '❄️ Winter Pieces:'}
+              </span>
+              {[
+                { id: 'All', label: 'All Ensembles' },
+                { id: '1 Piece', label: '1 Piece (Kurti / Kurta)' },
+                { id: '2 Piece', label: '2 Piece (Suit Set)' },
+                { id: '3 Piece', label: '3 Piece (Complete Suit)' },
+              ].map((pill) => (
+                <button
+                  key={pill.id}
+                  onClick={() => setSelectedSubcategory(pill.id)}
+                  className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition ${
+                    selectedSubcategory === pill.id
+                      ? 'bg-[#1F1C1A] text-white shadow-sm'
+                      : 'bg-white border border-[#D9CCC2] text-[#5A524C] hover:border-[#1F1C1A]'
+                  }`}
+                >
+                  {pill.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Quick Subcategory Pills for Trousers & Shalwar */}
+          {selectedCategory === 'Trousers & Shalwar' && (
+            <div className="flex flex-wrap items-center gap-2 p-3 bg-[#FAF8F5] rounded-xl border border-[#EADBCE]">
+              <span className="text-xs font-bold text-[#1F1C1A] uppercase tracking-wider mr-1">
+                ✨ Bottoms & Cuts:
+              </span>
+              {[
+                { id: 'All', label: 'All Items' },
+                { id: 'Trousers', label: 'Trousers (Straight & Silk)' },
+                { id: 'Pajamas', label: 'Pajamas (Cotton Stretch)' },
+                { id: 'Shalwar', label: 'Shalwar (Pleated & Tulip)' },
+                { id: 'Shalwar Kameez', label: 'Shalwar Kameez (2PC)' },
+              ].map((pill) => (
+                <button
+                  key={pill.id}
+                  onClick={() => setSelectedSubcategory(pill.id)}
+                  className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition ${
+                    selectedSubcategory === pill.id
+                      ? 'bg-[#1F1C1A] text-white shadow-sm'
+                      : 'bg-white border border-[#D9CCC2] text-[#5A524C] hover:border-[#1F1C1A]'
+                  }`}
+                >
+                  {pill.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Product Grid */}
           {filteredProducts.length === 0 ? (

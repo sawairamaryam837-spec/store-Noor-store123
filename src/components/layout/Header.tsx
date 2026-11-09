@@ -47,6 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [summerDropdownOpen, setSummerDropdownOpen] = useState(false);
   const [winterDropdownOpen, setWinterDropdownOpen] = useState(false);
+  const [trousersDropdownOpen, setTrousersDropdownOpen] = useState(false);
 
   const handleNavClick = (view: string, category: string | null = null, subcategory: string | null = null) => {
     setCurrentView(view);
@@ -266,10 +267,10 @@ export const Header: React.FC<HeaderProps> = ({
               <ChevronDown className="w-3.5 h-3.5 opacity-70" />
             </button>
             {summerDropdownOpen && (
-              <div className="absolute top-full left-0 w-48 bg-white shadow-xl rounded-md border border-[#EADBCE] py-2 z-50 animate-fadeIn">
+              <div className="absolute top-full left-0 w-44 bg-white shadow-xl rounded-md border border-[#EADBCE] py-2 z-50 animate-fadeIn">
                 <button
                   onClick={() => handleNavClick('shop', 'Summer Wear', null)}
-                  className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block"
+                  className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block font-medium"
                 >
                   All Summer Wear
                 </button>
@@ -277,7 +278,7 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={() => handleNavClick('shop', 'Summer Wear', '1 Piece')}
                   className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block"
                 >
-                  1 Piece (Kurti)
+                  1 Piece (Kurti / Shirt)
                 </button>
                 <button
                   onClick={() => handleNavClick('shop', 'Summer Wear', '2 Piece')}
@@ -311,10 +312,10 @@ export const Header: React.FC<HeaderProps> = ({
               <ChevronDown className="w-3.5 h-3.5 opacity-70" />
             </button>
             {winterDropdownOpen && (
-              <div className="absolute top-full left-0 w-48 bg-white shadow-xl rounded-md border border-[#EADBCE] py-2 z-50 animate-fadeIn">
+              <div className="absolute top-full left-0 w-44 bg-white shadow-xl rounded-md border border-[#EADBCE] py-2 z-50 animate-fadeIn">
                 <button
                   onClick={() => handleNavClick('shop', 'Winter Wear', null)}
-                  className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block"
+                  className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block font-medium"
                 >
                   All Winter Wear
                 </button>
@@ -322,19 +323,70 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={() => handleNavClick('shop', 'Winter Wear', '1 Piece')}
                   className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block"
                 >
-                  1 Piece (Woolen/Velvet Kurta)
+                  1 Piece (Kurta / Shirt)
                 </button>
                 <button
                   onClick={() => handleNavClick('shop', 'Winter Wear', '2 Piece')}
                   className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block"
                 >
-                  2 Piece (Warm Karandi Set)
+                  2 Piece (Karandi / Silk Set)
                 </button>
                 <button
                   onClick={() => handleNavClick('shop', 'Winter Wear', '3 Piece')}
                   className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block"
                 >
-                  3 Piece (Shawl + Suit)
+                  3 Piece (Suit with Shawl)
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Trousers, Pajamas & Shalwar Kameez Section Dropdown */}
+          <div
+            className="relative"
+            onMouseEnter={() => setTrousersDropdownOpen(true)}
+            onMouseLeave={() => setTrousersDropdownOpen(false)}
+          >
+            <button
+              onClick={() => handleNavClick('shop', 'Trousers & Shalwar')}
+              className={`hover:text-[#B88E3E] transition py-1 flex items-center gap-1 ${
+                selectedCategory === 'Trousers & Shalwar' ? 'text-[#B88E3E] font-semibold' : ''
+              }`}
+            >
+              Trousers & Shalwar
+              <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+            </button>
+            {trousersDropdownOpen && (
+              <div className="absolute top-full left-0 w-48 bg-white shadow-xl rounded-md border border-[#EADBCE] py-2 z-50 animate-fadeIn">
+                <button
+                  onClick={() => handleNavClick('shop', 'Trousers & Shalwar', null)}
+                  className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block font-medium"
+                >
+                  All Trousers & Shalwars
+                </button>
+                <button
+                  onClick={() => handleNavClick('shop', 'Trousers & Shalwar', 'Trousers')}
+                  className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block"
+                >
+                  Trousers (Straight & Silk)
+                </button>
+                <button
+                  onClick={() => handleNavClick('shop', 'Trousers & Shalwar', 'Pajamas')}
+                  className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block"
+                >
+                  Pajamas (Cotton Stretch)
+                </button>
+                <button
+                  onClick={() => handleNavClick('shop', 'Trousers & Shalwar', 'Shalwar')}
+                  className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block"
+                >
+                  Shalwar (Pleated & Tulip)
+                </button>
+                <button
+                  onClick={() => handleNavClick('shop', 'Trousers & Shalwar', 'Shalwar Kameez')}
+                  className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block"
+                >
+                  Shalwar Kameez (2PC Suits)
                 </button>
               </div>
             )}
@@ -456,17 +508,17 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
               {summerDropdownOpen && (
                 <div className="pl-4 pt-2 space-y-2 text-xs normal-case text-[#5A524C]">
-                  <p onClick={() => handleNavClick('shop', 'Summer Wear', null)} className="py-1 cursor-pointer hover:text-[#B88E3E]">
+                  <p onClick={() => handleNavClick('shop', 'Summer Wear', null)} className="py-1 cursor-pointer hover:text-[#B88E3E] font-medium">
                     All Summer Wear
                   </p>
                   <p onClick={() => handleNavClick('shop', 'Summer Wear', '1 Piece')} className="py-1 cursor-pointer hover:text-[#B88E3E]">
-                    1 Piece (Kurti)
+                    1 Piece (Kurti / Shirt)
                   </p>
                   <p onClick={() => handleNavClick('shop', 'Summer Wear', '2 Piece')} className="py-1 cursor-pointer hover:text-[#B88E3E]">
                     2 Piece (Shirt & Trouser)
                   </p>
                   <p onClick={() => handleNavClick('shop', 'Summer Wear', '3 Piece')} className="py-1 cursor-pointer hover:text-[#B88E3E]">
-                    3 Piece (Suit with Dupatta)
+                    3 Piece (Complete Suit)
                   </p>
                 </div>
               )}
@@ -483,17 +535,47 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
               {winterDropdownOpen && (
                 <div className="pl-4 pt-2 space-y-2 text-xs normal-case text-[#5A524C]">
-                  <p onClick={() => handleNavClick('shop', 'Winter Wear', null)} className="py-1 cursor-pointer hover:text-[#B88E3E]">
+                  <p onClick={() => handleNavClick('shop', 'Winter Wear', null)} className="py-1 cursor-pointer hover:text-[#B88E3E] font-medium">
                     All Winter Wear
                   </p>
                   <p onClick={() => handleNavClick('shop', 'Winter Wear', '1 Piece')} className="py-1 cursor-pointer hover:text-[#B88E3E]">
-                    1 Piece
+                    1 Piece (Kurta / Shirt)
                   </p>
                   <p onClick={() => handleNavClick('shop', 'Winter Wear', '2 Piece')} className="py-1 cursor-pointer hover:text-[#B88E3E]">
-                    2 Piece
+                    2 Piece (Karandi / Silk Set)
                   </p>
                   <p onClick={() => handleNavClick('shop', 'Winter Wear', '3 Piece')} className="py-1 cursor-pointer hover:text-[#B88E3E]">
-                    3 Piece (Velvet & Shawls)
+                    3 Piece (Suit with Shawl)
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Trousers, Pajamas & Shalwar Accordion */}
+            <div className="py-2 border-b border-[#EADBCE]/50">
+              <div
+                className="flex justify-between items-center cursor-pointer"
+                onClick={() => setTrousersDropdownOpen(!trousersDropdownOpen)}
+              >
+                <span>Trousers & Shalwar</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${trousersDropdownOpen ? 'rotate-180' : ''}`} />
+              </div>
+              {trousersDropdownOpen && (
+                <div className="pl-4 pt-2 space-y-2 text-xs normal-case text-[#5A524C]">
+                  <p onClick={() => handleNavClick('shop', 'Trousers & Shalwar', null)} className="py-1 cursor-pointer hover:text-[#B88E3E] font-medium">
+                    All Trousers & Shalwars
+                  </p>
+                  <p onClick={() => handleNavClick('shop', 'Trousers & Shalwar', 'Trousers')} className="py-1 cursor-pointer hover:text-[#B88E3E]">
+                    Trousers (Straight & Silk)
+                  </p>
+                  <p onClick={() => handleNavClick('shop', 'Trousers & Shalwar', 'Pajamas')} className="py-1 cursor-pointer hover:text-[#B88E3E]">
+                    Pajamas (Cotton Stretch)
+                  </p>
+                  <p onClick={() => handleNavClick('shop', 'Trousers & Shalwar', 'Shalwar')} className="py-1 cursor-pointer hover:text-[#B88E3E]">
+                    Shalwar (Pleated & Tulip)
+                  </p>
+                  <p onClick={() => handleNavClick('shop', 'Trousers & Shalwar', 'Shalwar Kameez')} className="py-1 cursor-pointer hover:text-[#B88E3E]">
+                    Shalwar Kameez (2PC Suits)
                   </p>
                 </div>
               )}

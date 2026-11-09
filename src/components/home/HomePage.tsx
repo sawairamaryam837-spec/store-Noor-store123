@@ -55,6 +55,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
   const { products, categories } = useStore();
   const [activeSlide, setActiveSlide] = useState(0);
   const [activeSeasonTab, setActiveSeasonTab] = useState<'all' | 'summer' | 'winter' | 'formal' | 'sale'>('all');
+  const [activeSeasonPiece, setActiveSeasonPiece] = useState<'All' | '1 Piece' | '2 Piece' | '3 Piece'>('All');
+  const [activeTrousersTab, setActiveTrousersTab] = useState<'All' | 'Trousers' | 'Pajamas' | 'Shalwar' | 'Shalwar Kameez'>('All');
 
   // Auto-advance hero slides every 5.5s
   useEffect(() => {
@@ -70,10 +72,37 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
 
   // Filtered products for interactive showcase tab
   const tabFilteredProducts = products.filter((p) => {
-    if (activeSeasonTab === 'summer') return p.season === 'Summer' || p.category === 'Summer Wear';
-    if (activeSeasonTab === 'winter') return p.season === 'Winter' || p.category === 'Winter Wear';
-    if (activeSeasonTab === 'formal') return p.category === 'Formal Wear' || p.category === 'Wedding Wear';
-    if (activeSeasonTab === 'sale') return (p.salePrice && p.salePrice < p.regularPrice) || p.category === 'Sale';
+    let matchSeason = true;
+    if (activeSeasonTab === 'summer') matchSeason = p.season === 'Summer' || p.category === 'Summer Wear';
+    else if (activeSeasonTab === 'winter') matchSeason = p.season === 'Winter' || p.category === 'Winter Wear';
+    else if (activeSeasonTab === 'formal') matchSeason = p.category === 'Formal Wear' || p.category === 'Wedding Wear';
+    else if (activeSeasonTab === 'sale') matchSeason = (p.salePrice && p.salePrice < p.regularPrice) || p.category === 'Sale';
+    if (!matchSeason) return false;
+
+    if ((activeSeasonTab === 'summer' || activeSeasonTab === 'winter') && activeSeasonPiece !== 'All') {
+      if (p.subcategory !== activeSeasonPiece && !p.type?.includes(activeSeasonPiece)) return false;
+    }
+    return true;
+  }).slice(0, 8);
+
+  // Trousers, Pajamas, Shalwar & Shalwar Kameez products
+  const trousersShowcaseProducts = products.filter((p) => {
+    const isTrousersShalwar =
+      p.category === 'Trousers & Shalwar' ||
+      p.subcategory === 'Trousers' ||
+      p.subcategory === 'Pajamas' ||
+      p.subcategory === 'Shalwar' ||
+      p.subcategory === 'Shalwar Kameez' ||
+      p.name.toLowerCase().includes('trouser') ||
+      p.name.toLowerCase().includes('pajama') ||
+      p.name.toLowerCase().includes('shalwar');
+    if (!isTrousersShalwar) return false;
+
+    if (activeTrousersTab === 'All') return true;
+    if (activeTrousersTab === 'Trousers') return p.subcategory === 'Trousers' || p.name.toLowerCase().includes('trouser');
+    if (activeTrousersTab === 'Pajamas') return p.subcategory === 'Pajamas' || p.name.toLowerCase().includes('pajama');
+    if (activeTrousersTab === 'Shalwar') return (p.subcategory === 'Shalwar' || p.name.toLowerCase().includes('shalwar')) && !p.name.toLowerCase().includes('kameez');
+    if (activeTrousersTab === 'Shalwar Kameez') return p.subcategory === 'Shalwar Kameez' || p.name.toLowerCase().includes('kameez');
     return true;
   }).slice(0, 8);
 
@@ -367,19 +396,92 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
           </div>
 
           {/* Interactive Season Switcher Tabs */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                { id: 'all', label: 'All Designs' },
+                { id: 'summer', label: '☀️ Summer Lawn' },
+                { id: 'winter', label: '❄️ Winter Khaddar' },
+                { id: 'formal', label: '👑 Formal & Wedding' },
+                { id: 'sale', label: '🔥 Festive Sale' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveSeasonTab(tab.id as any);
+                    setActiveSeasonPiece('All');
+                  }}
+                  className={`py-1.5 px-3 rounded-full text-xs font-semibold transition-all ${
+                    activeSeasonTab === tab.id
+                      ? 'bg-[#1F1C1A] text-white shadow-md'
+                      : 'bg-[#F4EBE1] hover:bg-[#EADBCE] text-[#4A423D]'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Quick 1 Piece, 2 Piece, 3 Piece selector for Summer and Winter */}
+            {(activeSeasonTab === 'summer' || activeSeasonTab === 'winter') && (
+              <div className="flex items-center gap-1.5 bg-[#FAF8F5] p-1 rounded-full border border-[#EADBCE] sm:ml-2">
+                <span className="text-[10px] font-bold text-[#7A7169] uppercase px-2">Piece:</span>
+                {(['All', '1 Piece', '2 Piece', '3 Piece'] as const).map((piece) => (
+                  <button
+                    key={piece}
+                    onClick={() => setActiveSeasonPiece(piece)}
+                    className={`py-1 px-2.5 rounded-full text-[11px] font-semibold transition ${
+                      activeSeasonPiece === piece
+                        ? 'bg-[#B88E3E] text-white shadow-xs'
+                        : 'text-[#5A524C] hover:text-[#1F1C1A]'
+                    }`}
+                  >
+                    {piece}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Tab products grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          {tabFilteredProducts.map((product) => (
+            <ProductCard key={product.id} product={product} onSelect={onSelectProduct} />
+          ))}
+        </div>
+      </section>
+
+      {/* DEDICATED TROUSERS, PAJAMAS & SHALWAR KAMEEZ SHOWCASE SECTION */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 pb-4 border-b border-[#EADBCE] gap-4">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FAF8F5] border border-[#B88E3E] text-[10px] font-bold text-[#B88E3E] uppercase tracking-wider mb-1">
+              <Sparkles className="w-3 h-3 text-[#B88E3E]" />
+              <span>Wardrobe Essentials</span>
+            </div>
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A]">
+              Trousers, Pajamas & Shalwar Kameez
+            </h2>
+            <p className="text-xs text-[#7A7169] mt-1">
+              Tailored raw silk cigarette trousers, stretch malai pajamas, traditional pleated shalwars & matching 2PC suits.
+            </p>
+          </div>
+
+          {/* Interactive Bottoms Filter Tabs */}
           <div className="flex flex-wrap items-center gap-2">
             {[
-              { id: 'all', label: 'All Designs' },
-              { id: 'summer', label: '☀️ Summer Lawn' },
-              { id: 'winter', label: '❄️ Winter Khaddar' },
-              { id: 'formal', label: '👑 Formal & Wedding' },
-              { id: 'sale', label: '🔥 Festive Sale' },
+              { id: 'All', label: 'All Essentials' },
+              { id: 'Trousers', label: 'Trousers' },
+              { id: 'Pajamas', label: 'Pajamas' },
+              { id: 'Shalwar', label: 'Shalwars' },
+              { id: 'Shalwar Kameez', label: 'Shalwar Kameez (2PC)' },
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveSeasonTab(tab.id as any)}
+                onClick={() => setActiveTrousersTab(tab.id as any)}
                 className={`py-1.5 px-3 rounded-full text-xs font-semibold transition-all ${
-                  activeSeasonTab === tab.id
+                  activeTrousersTab === tab.id
                     ? 'bg-[#1F1C1A] text-white shadow-md'
                     : 'bg-[#F4EBE1] hover:bg-[#EADBCE] text-[#4A423D]'
                 }`}
@@ -390,11 +492,22 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
           </div>
         </div>
 
-        {/* Tab products grid */}
+        {/* Trousers & Shalwar Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {tabFilteredProducts.map((product) => (
+          {trousersShowcaseProducts.map((product) => (
             <ProductCard key={product.id} product={product} onSelect={onSelectProduct} />
           ))}
+        </div>
+
+        {/* View full section button */}
+        <div className="text-center mt-6">
+          <button
+            onClick={() => onNavigateToShop('Trousers & Shalwar')}
+            className="inline-flex items-center gap-2 py-2.5 px-6 rounded-xl border border-[#B88E3E] text-[#B88E3E] hover:bg-[#B88E3E] hover:text-white text-xs font-bold uppercase tracking-wider transition shadow-sm"
+          >
+            <span>Explore All Trousers, Pajamas & Shalwar Kameez</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       </section>
 
