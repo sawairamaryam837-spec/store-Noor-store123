@@ -7,7 +7,8 @@ import {
   deleteDoc,
   updateDoc,
 } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase/config';
+import { onAuthStateChanged } from 'firebase/auth';
+import { db, auth, handleFirestoreError, OperationType } from '../firebase/config';
 import { Product, Category, StoreSettings } from '../types';
 import {
   INITIAL_CATEGORIES,
@@ -34,15 +35,29 @@ interface StoreContextType {
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
+const DEPRECATED_CATALOG_IDS = new Set([
+  'raw-silk-trousers',
+  'cotton-stretch-pajama',
+  'traditional-pleated-shalwar',
+  'tulip-cutwork-shalwar',
+  'classic-lawn-shalwar-kameez-2pc',
+  'festive-karandi-shalwar-kameez',
+]);
+
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
   const [settings, setSettings] = useState<StoreSettings>(INITIAL_SETTINGS);
   const [loading, setLoading] = useState(true);
 
-  // Initial database check & seed
+  // Initial database check & seed when authenticated admin logs in
   useEffect(() => {
-    seedDatabaseIfEmpty().catch(console.warn);
+    const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        seedDatabaseIfEmpty().catch(console.warn);
+      }
+    });
+    return () => unsubAuth();
   }, []);
 
   // Subscribe to Products
@@ -54,15 +69,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const dbProdsMap = new Map<string, Product>();
           const customProds: Product[] = [];
           snapshot.forEach((docSnap) => {
+            if (DEPRECATED_CATALOG_IDS.has(docSnap.id)) return;
             const data = { ...docSnap.data(), id: docSnap.id } as Product;
             dbProdsMap.set(docSnap.id, data);
             if (!INITIAL_PRODUCTS.some((ip) => ip.id === docSnap.id)) {
-              const hasAssetImage = data.colors?.some((c) =>
-                c.images?.some((img) => img.startsWith('/assets/'))
-              );
-              if (hasAssetImage) {
-                customProds.push(data);
-              }
+              customProds.push(data);
             }
           });
           const merged = INITIAL_PRODUCTS.map((p) => {
@@ -71,6 +82,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             return {
               ...p,
               ...dbItem,
+              name: p.name,
+              description: p.description,
               brand: p.brand || dbItem.brand,
               type: p.type || dbItem.type,
               fabric: p.fabric || dbItem.fabric,
@@ -79,6 +92,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               additionalCategories: p.additionalCategories,
               season: p.season,
               isStitched: p.isStitched,
+              isNewArrival: p.isNewArrival,
+              isBestSeller: p.isBestSeller,
+              isFeatured: p.isFeatured,
+              defaultColor: p.defaultColor,
               colors: p.colors,
             };
           });

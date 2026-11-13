@@ -45,24 +45,24 @@ export const SearchModal: React.FC<SearchModalProps> = ({
   const trendingTags = ['Chiffon', 'Lawn 3-Piece', 'Velvet Shawl', 'Peshwas', 'Chikankari', 'Black Kurti'];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-[#EADBCE] relative">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 sm:pt-20 pb-4 px-3 sm:px-4 bg-black/60 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-2xl w-full p-4 sm:p-6 shadow-2xl border border-[#EADBCE] relative max-h-[88vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-black transition"
+          className="absolute top-3.5 right-3.5 sm:top-5 sm:right-5 p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-black transition"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <form onSubmit={handleFormSubmit} className="relative mt-2">
-          <Search className="w-5 h-5 text-[#B88E3E] absolute left-4 top-3.5" />
+        <form onSubmit={handleFormSubmit} className="relative mt-7 sm:mt-2">
+          <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[#B88E3E] absolute left-3.5 sm:left-4 top-3 sm:top-3.5" />
           <input
             type="text"
             autoFocus
-            placeholder="Search by fabric, style, or collection (e.g. Velvet, Organza)..."
+            placeholder="Search by fabric, style, or collection..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full pl-12 pr-10 py-3 rounded-xl border border-[#D9CCC2] text-sm focus:outline-none focus:border-[#B88E3E] shadow-inner"
+            className="w-full pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 rounded-xl border border-[#D9CCC2] text-xs sm:text-sm focus:outline-none focus:border-[#B88E3E] shadow-inner"
           />
         </form>
 
@@ -106,13 +106,13 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                   <img
                     src={prod.colors[0]?.images[0] || '/assets/aistudio/weddingseason__3__6ca9845d.jpeg'}
                     alt={prod.name}
-                    className="w-12 h-14 object-cover object-top rounded-lg border border-[#EADBCE]"
+                    className="w-12 h-14 object-cover object-top rounded-lg border border-[#EADBCE] shrink-0"
                   />
-                  <div className="flex-1">
-                    <p className="font-serif font-bold text-xs text-[#1F1C1A]">{prod.name}</p>
-                    <p className="text-[11px] text-[#7A7169]">{prod.category} • {prod.fabric}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-serif font-bold text-xs text-[#1F1C1A] truncate">{prod.name}</p>
+                    <p className="text-[11px] text-[#7A7169] truncate">{prod.category} • {prod.fabric}</p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right shrink-0">
                     <span className="text-xs font-bold text-[#B88E3E]">
                       Rs. {(prod.salePrice || prod.regularPrice).toLocaleString()}
                     </span>

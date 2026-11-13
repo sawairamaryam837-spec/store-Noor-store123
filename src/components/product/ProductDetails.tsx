@@ -205,37 +205,37 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({
     .slice(0, 4);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fadeIn">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 animate-fadeIn">
       {/* Breadcrumbs */}
-      <nav className="flex items-center gap-2 text-xs text-[#7A7169] mb-6 font-medium">
+      <nav className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-[#7A7169] mb-5 sm:mb-6 font-medium">
         <button onClick={onBack} className="hover:text-[#B88E3E] transition">
           Home
         </button>
-        <ChevronRight className="w-3 h-3 text-[#A89D93]" />
+        <ChevronRight className="w-3 h-3 text-[#A89D93] shrink-0" />
         <span className="text-[#8C827A]">{product.category}</span>
         {product.subcategory && (
           <>
-            <ChevronRight className="w-3 h-3 text-[#A89D93]" />
+            <ChevronRight className="w-3 h-3 text-[#A89D93] shrink-0" />
             <span className="text-[#8C827A]">{product.subcategory}</span>
           </>
         )}
-        <ChevronRight className="w-3 h-3 text-[#A89D93]" />
-        <span className="text-[#1F1C1A] font-semibold truncate max-w-xs">{product.name}</span>
+        <ChevronRight className="w-3 h-3 text-[#A89D93] shrink-0" />
+        <span className="text-[#1F1C1A] font-semibold truncate max-w-[200px] sm:max-w-xs">{product.name}</span>
       </nav>
 
       {/* Main Grid: Gallery & Purchase Info */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
         {/* Dynamic Image Gallery (7 Cols) */}
-        <div className="lg:col-span-7 flex flex-col-reverse sm:flex-row gap-4">
+        <div className="lg:col-span-7 flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 min-w-0">
           {/* Thumbnails strip */}
-          <div className="flex sm:flex-col gap-3 overflow-x-auto sm:overflow-y-auto max-h-[580px] pb-2 sm:pb-0 shrink-0">
+          <div className="flex sm:flex-col gap-2.5 sm:gap-3 overflow-x-auto sm:overflow-y-auto sm:max-h-[580px] pb-2 sm:pb-0 shrink-0">
             {currentGallery.map((imgUrl, idx) => (
               <button
                 key={idx}
                 onClick={() => setActiveImageIndex(idx)}
-                className={`w-20 sm:w-22 aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all ${
+                className={`w-16 sm:w-20 lg:w-22 shrink-0 aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all ${
                   idx === activeImageIndex
-                    ? 'border-[#B88E3E] shadow-md scale-102'
+                    ? 'border-[#B88E3E] shadow-md'
                     : 'border-transparent opacity-75 hover:opacity-100'
                 }`}
               >
@@ -271,9 +271,9 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({
             </div>
 
             {/* Current Color Indicator on Image */}
-            <div className="absolute bottom-4 left-4 px-3 py-1.5 rounded-lg bg-black/60 backdrop-blur-md text-white text-xs flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full border border-white" style={{ backgroundColor: activeColor.hex }} />
-              <span>Viewing: <strong className="font-semibold">{activeColor.name}</strong></span>
+            <div className="absolute bottom-3 left-3 max-w-[calc(100%-1.5rem)] px-3 py-1.5 rounded-lg bg-black/65 backdrop-blur-md text-white text-xs flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full border border-white shrink-0" style={{ backgroundColor: activeColor.hex }} />
+              <span className="truncate">Viewing: <strong className="font-semibold">{activeColor.name}</strong></span>
             </div>
 
             {/* Wishlist and Share */}
@@ -431,7 +431,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({
                 </button>
               </div>
 
-              <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                 {activeColor.sizes.map((s) => {
                   const isSelected = selectedSize === s.size;
                   const isSoldOut = s.stock <= 0;
@@ -489,9 +489,9 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({
 
             {/* QUANTITY & ACTION BUTTONS */}
             <div className="mt-6 pt-5 border-t border-[#EADBCE] space-y-4">
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-3 sm:gap-4">
                 {/* Quantity Stepper */}
-                <div className="flex items-center border border-[#D9CCC2] rounded-lg bg-white overflow-hidden">
+                <div className="flex items-center justify-between xs:justify-start border border-[#D9CCC2] rounded-lg bg-white overflow-hidden shrink-0">
                   <button
                     disabled={quantity <= 1 || isOutOfStock}
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -515,7 +515,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({
                 <button
                   disabled={isOutOfStock || !selectedSize}
                   onClick={handleAddToCart}
-                  className="flex-1 py-3 px-6 rounded-lg bg-[#1F1C1A] hover:bg-[#B88E3E] text-white text-xs sm:text-sm font-semibold uppercase tracking-wider transition shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 px-4 sm:px-6 rounded-lg bg-[#1F1C1A] hover:bg-[#B88E3E] text-white text-xs sm:text-sm font-semibold uppercase tracking-wider transition shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ShoppingBag className="w-4 h-4 text-[#EADBCE]" />
                   <span>{isOutOfStock ? 'Sold Out' : 'Add To Cart'}</span>
@@ -548,7 +548,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({
             </div>
 
             {/* Trust & Delivery Info */}
-            <div className="mt-6 pt-5 border-t border-[#EADBCE] grid grid-cols-2 gap-4 text-xs text-[#5A524C]">
+            <div className="mt-6 pt-5 border-t border-[#EADBCE] grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs text-[#5A524C]">
               <div className="flex items-start gap-2.5">
                 <Truck className="w-4 h-4 text-[#B88E3E] shrink-0 mt-0.5" />
                 <div>
@@ -673,7 +673,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({
             <p className="text-xs uppercase tracking-widest text-[#B88E3E] font-semibold">Recommended for you</p>
             <h3 className="font-serif text-2xl font-bold text-[#1F1C1A] mt-1">Complete Your Look</h3>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
             {relatedProducts.map((p) => (
               <div
                 key={p.id}
@@ -799,7 +799,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({
       {/* Review Submission Modal */}
       {showReviewModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#EADBCE]">
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-[#EADBCE] max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-[#EADBCE] pb-3 mb-4">
               <h4 className="font-serif text-lg font-bold text-[#1F1C1A]">Write a Review</h4>
               <button onClick={() => setShowReviewModal(false)} className="text-gray-400 hover:text-black">

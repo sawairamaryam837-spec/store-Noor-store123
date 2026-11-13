@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db, auth } from '../firebase/config';
 import { useAuth } from './AuthContext';
 
 interface WishlistContextType {
@@ -19,7 +19,8 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     async function loadWishlist() {
-      if (user) {
+      const isFirebaseUser = Boolean(user && auth.currentUser && auth.currentUser.uid === user.uid);
+      if (isFirebaseUser && user) {
         try {
           const docSnap = await getDoc(doc(db, 'wishlists', user.uid));
           if (docSnap.exists() && docSnap.data()?.productIds) {
@@ -43,7 +44,8 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     if (!hasLoaded) return;
-    if (user) {
+    const isFirebaseUser = Boolean(user && auth.currentUser && auth.currentUser.uid === user.uid);
+    if (isFirebaseUser && user) {
       setDoc(doc(db, 'wishlists', user.uid), {
         userId: user.uid,
         productIds: wishlistIds,

@@ -4,12 +4,12 @@ import { useStore } from '../../context/StoreContext';
 
 export const AboutPage: React.FC = () => {
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12 space-y-8 animate-fadeIn text-[#4A423D] text-xs sm:text-sm leading-relaxed">
-      <div className="text-center space-y-2 border-b border-[#EADBCE] pb-8">
+    <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12 space-y-6 sm:space-y-8 animate-fadeIn text-[#4A423D] text-xs sm:text-sm leading-relaxed">
+      <div className="text-center space-y-2 border-b border-[#EADBCE] pb-6 sm:pb-8">
         <span className="text-xs font-bold uppercase tracking-widest text-[#B88E3E]">Our Heritage & Vision</span>
-        <h1 className="font-serif text-3xl sm:text-4xl font-bold text-[#1F1C1A]">About NOOR STUDIO</h1>
+        <h1 className="font-serif text-2xl sm:text-4xl font-bold text-[#1F1C1A]">About NOOR STUDIO</h1>
         <p className="font-serif italic text-base text-[#8C827A]">
-          &ldquo;Elegant Fashion, Timeless Confidence&rdquo;
+          &ldquo;Wear Your Elegance Style Of Excellence&rdquo;
         </p>
       </div>
 
@@ -59,19 +59,19 @@ export const ContactPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-12 space-y-10 animate-fadeIn">
+    <div className="max-w-5xl mx-auto px-4 py-8 sm:py-12 space-y-8 sm:space-y-10 animate-fadeIn">
       <div className="text-center space-y-2 border-b border-[#EADBCE] pb-6">
         <span className="text-xs font-bold uppercase tracking-widest text-[#B88E3E]">Customer Care</span>
-        <h1 className="font-serif text-3xl sm:text-4xl font-bold text-[#1F1C1A]">Contact NOOR STUDIO</h1>
+        <h1 className="font-serif text-2xl sm:text-4xl font-bold text-[#1F1C1A]">Contact NOOR STUDIO</h1>
         <p className="text-xs text-[#7A7169] max-w-md mx-auto">
           We are here to assist you with order verification, size queries, styling advice, and delivery updates.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-10">
         {/* Contact Info (5 Cols) */}
         <div className="md:col-span-5 space-y-6">
-          <div className="p-6 rounded-2xl bg-white border border-[#EADBCE] shadow-sm space-y-4 text-xs">
+          <div className="p-4 sm:p-6 rounded-2xl bg-white border border-[#EADBCE] shadow-sm space-y-4 text-xs">
             <h3 className="font-serif text-lg font-bold text-[#1F1C1A]">Official Business Details</h3>
 
             <div className="space-y-4 text-[#4A423D]">
@@ -113,11 +113,11 @@ export const ContactPage: React.FC = () => {
                 <div className="w-9 h-9 rounded-full bg-[#FAF8F5] border border-[#EADBCE] flex items-center justify-center text-[#B88E3E] shrink-0">
                   <Mail className="w-4 h-4" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <span className="font-semibold text-[#1F1C1A] block">Business Inquiries</span>
                   <a
                     href={`mailto:${settings.email || 'support@noorstudio.pk'}`}
-                    className="text-[#1F1C1A] font-medium hover:underline"
+                    className="text-[#1F1C1A] font-medium hover:underline break-all sm:break-words"
                   >
                     {settings.email || 'support@noorstudio.pk'}
                   </a>
@@ -128,13 +128,13 @@ export const ContactPage: React.FC = () => {
                 <div className="w-9 h-9 rounded-full bg-[#FAF8F5] border border-[#EADBCE] flex items-center justify-center text-[#B88E3E] shrink-0">
                   <Globe className="w-4 h-4" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <span className="font-semibold text-[#1F1C1A] block">Official Website</span>
                   <a
                     href={settings.websiteUrl || 'https://www.noorstudio.pk'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#1F1C1A] font-medium hover:underline"
+                    className="text-[#1F1C1A] font-medium hover:underline break-all sm:break-words"
                   >
                     {settings.websiteUrl || 'https://www.noorstudio.pk'}
                   </a>
@@ -145,7 +145,7 @@ export const ContactPage: React.FC = () => {
         </div>
 
         {/* Contact Form (7 Cols) */}
-        <div className="md:col-span-7 bg-white rounded-2xl border border-[#EADBCE] p-6 sm:p-8 shadow-sm">
+        <div className="md:col-span-7 bg-white rounded-2xl border border-[#EADBCE] p-4 sm:p-8 shadow-sm">
           <h3 className="font-serif text-lg font-bold text-[#1F1C1A] mb-1">Send a Message</h3>
           <p className="text-xs text-[#7A7169] mb-4">Our dedicated concierge team will reply within 24 hours.</p>
 
@@ -226,9 +226,9 @@ export const ContactPage: React.FC = () => {
 
 export const ShippingPolicyPage: React.FC = () => {
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12 space-y-6 text-xs sm:text-sm text-[#4A423D] leading-relaxed animate-fadeIn">
+    <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12 space-y-6 text-xs sm:text-sm text-[#4A423D] leading-relaxed animate-fadeIn">
       <div className="border-b border-[#EADBCE] pb-4">
-        <h1 className="font-serif text-3xl font-bold text-[#1F1C1A]">Shipping & Delivery Policy</h1>
+        <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A]">Shipping & Delivery Policy</h1>
         <p className="text-xs text-[#7A7169] mt-1">Official delivery procedures across Pakistan</p>
       </div>
 
@@ -265,9 +265,9 @@ export const ShippingPolicyPage: React.FC = () => {
 
 export const ReturnsPolicyPage: React.FC = () => {
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12 space-y-6 text-xs sm:text-sm text-[#4A423D] leading-relaxed animate-fadeIn">
+    <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12 space-y-6 text-xs sm:text-sm text-[#4A423D] leading-relaxed animate-fadeIn">
       <div className="border-b border-[#EADBCE] pb-4">
-        <h1 className="font-serif text-3xl font-bold text-[#1F1C1A]">Return & Exchange Policy</h1>
+        <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A]">Return & Exchange Policy</h1>
         <p className="text-xs text-[#7A7169] mt-1">Hassle-free 7-day customer satisfaction guarantee</p>
       </div>
 
@@ -319,10 +319,10 @@ export const FAQsPage: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12 space-y-8 animate-fadeIn">
+    <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12 space-y-6 sm:space-y-8 animate-fadeIn">
       <div className="text-center space-y-2 border-b border-[#EADBCE] pb-6">
         <span className="text-xs font-bold uppercase tracking-widest text-[#B88E3E]">Got Questions?</span>
-        <h1 className="font-serif text-3xl sm:text-4xl font-bold text-[#1F1C1A]">Frequently Asked Questions</h1>
+        <h1 className="font-serif text-2xl sm:text-4xl font-bold text-[#1F1C1A]">Frequently Asked Questions</h1>
         <p className="text-xs text-[#7A7169]">Everything you need to know about shopping with NOOR STUDIO</p>
       </div>
 
@@ -333,6 +333,72 @@ export const FAQsPage: React.FC = () => {
             <p className="text-xs text-[#5A524C] leading-relaxed">{f.a}</p>
           </div>
         ))}
+      </div>
+    </div>
+  );
+};
+
+export const PrivacyPolicyPage: React.FC = () => {
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12 space-y-6 animate-fadeIn text-[#4A423D] text-xs sm:text-sm leading-relaxed">
+      <div className="text-center space-y-2 border-b border-[#EADBCE] pb-6">
+        <span className="text-xs font-bold uppercase tracking-widest text-[#B88E3E]">Transparency & Trust</span>
+        <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A]">Privacy Policy</h1>
+        <p className="text-xs text-[#7A7169]">How NOOR STUDIO protects and safeguards your personal data</p>
+      </div>
+
+      <div className="space-y-4">
+        <p>
+          NOOR STUDIO is firmly committed to respecting and protecting the privacy of our customers. This Privacy Policy details the types of personal data we collect, how it is utilized, and the stringent security protocols employed to maintain confidentiality.
+        </p>
+
+        <h3 className="font-serif text-base font-bold text-[#1F1C1A]">Information We Collect</h3>
+        <p>
+          When you place an order or create an account, we collect necessary shipping and contact details including your full name, phone number, delivery address, city, and email. This information is solely used to fulfill your purchase, process PostEx courier booking, and send tracking notifications.
+        </p>
+
+        <h3 className="font-serif text-base font-bold text-[#1F1C1A]">Data Protection & Third Parties</h3>
+        <p>
+          We do not sell, rent, or trade your personal information to third parties. Customer details are shared strictly with our verified delivery courier partner (PostEx) for the purpose of doorstep delivery and cash collection.
+        </p>
+
+        <h3 className="font-serif text-base font-bold text-[#1F1C1A]">Inquiries & Assistance</h3>
+        <p>
+          For privacy queries or data removal requests, please reach out to our team at <a href="mailto:support@noorstudio.pk" className="text-[#B88E3E] font-medium underline">support@noorstudio.pk</a> or call helpline <a href="tel:03284454746" className="text-[#1F1C1A] font-bold">03284454746</a>.
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export const TermsAndConditionsPage: React.FC = () => {
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12 space-y-6 animate-fadeIn text-[#4A423D] text-xs sm:text-sm leading-relaxed">
+      <div className="text-center space-y-2 border-b border-[#EADBCE] pb-6">
+        <span className="text-xs font-bold uppercase tracking-widest text-[#B88E3E]">Store Terms</span>
+        <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A]">Terms and Conditions</h1>
+        <p className="text-xs text-[#7A7169]">Guidelines and agreements governing purchases on NOOR STUDIO</p>
+      </div>
+
+      <div className="space-y-4">
+        <p>
+          Welcome to NOOR STUDIO. By accessing our website, browsing collections, or placing an order, you agree to comply with and be bound by the following terms and conditions.
+        </p>
+
+        <h3 className="font-serif text-base font-bold text-[#1F1C1A]">Pricing & Product Authenticity</h3>
+        <p>
+          All prices are quoted in Pakistani Rupees (PKR) and include all applicable taxes unless otherwise noted. We make every effort to display garment colors and embroidery textures accurately. Minor color variations may occur depending on screen calibrating devices.
+        </p>
+
+        <h3 className="font-serif text-base font-bold text-[#1F1C1A]">Order Confirmation & Verification</h3>
+        <p>
+          Orders placed via Cash on Delivery (COD) may require automated or manual phone/WhatsApp verification before dispatch to ensure legitimate delivery addresses across Pakistan.
+        </p>
+
+        <h3 className="font-serif text-base font-bold text-[#1F1C1A]">Exchanges & Cancellations</h3>
+        <p>
+          Orders may be cancelled prior to courier handover. Once dispatched via PostEx, changes fall under our standard 7-Day Exchange Policy.
+        </p>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { doc, setDoc, getDocs, collection, writeBatch } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from './config';
+import { db, auth } from './config';
 import { Category, StoreSettings, Coupon } from '../types';
 import { INITIAL_PRODUCTS } from '../data/productsCatalog';
 
@@ -7,7 +7,7 @@ export { INITIAL_PRODUCTS };
 
 export const INITIAL_SETTINGS: StoreSettings = {
   brandName: 'NOOR STUDIO',
-  tagline: 'Elegant Fashion, Timeless Confidence',
+  tagline: 'Wear Your Elegance Style Of Excellence',
   helpline: '03284454746',
   whatsapp: '+923284454746',
   email: 'support@noorstudio.pk',
@@ -31,8 +31,8 @@ export const INITIAL_CATEGORIES: Category[] = [
     id: 'stitched',
     name: 'Stitched',
     slug: 'stitched',
-    description: 'Ready-to-wear luxury pret, impeccably tailored kurtis, 2-piece and 3-piece designer sets.',
-    image: '/assets/aistudio/Zesh_Essential_Co-ord_Printed_Silk_2PC_f1593680.jpeg',
+    description: 'Ready-to-wear luxury pret, impeccably tailored silk co-ords, kurtis, and designer suits.',
+    image: '/assets/aistudio/SILK_COLLECTION_2026__2__316e6055.jpeg',
     order: 2,
     isActive: true,
   },
@@ -40,7 +40,7 @@ export const INITIAL_CATEGORIES: Category[] = [
     id: 'unstitched',
     name: 'Unstitched',
     slug: 'unstitched',
-    description: 'Premium unstitched fabrics with intricate embroidered neckline, panels, and digital silk dupattas.',
+    description: 'Premium unstitched fabrics with embroidered necklines, panels, and organza or khaddar shawls.',
     image: '/assets/aistudio/d_AGHA_NOOR_Unstitch_Replica_785f2865.jpeg',
     order: 3,
     isActive: true,
@@ -49,8 +49,8 @@ export const INITIAL_CATEGORIES: Category[] = [
     id: 'summer-wear',
     name: 'Summer Wear',
     slug: 'summer-wear',
-    description: 'Breathable lawn, schiffli chikankari, and swiss voile in 1PC, 2PC, and 3PC ensembles.',
-    image: '/assets/aistudio/Fabric__Chiffon___Malai__4__577f7568.jpeg',
+    description: 'Breathable summer chiffon, silk pret, and swiss voile in 1PC, 2PC, and 3PC ensembles.',
+    image: '/assets/aistudio/Fabric__Chiffon___Malai__2__7cdb36cf.jpeg',
     subcategories: ['1 Piece', '2 Piece', '3 Piece'],
     order: 4,
     isActive: true,
@@ -59,46 +59,45 @@ export const INITIAL_CATEGORIES: Category[] = [
     id: 'winter-wear',
     name: 'Winter Wear',
     slug: 'winter-wear',
-    description: 'Warm karandi, khaddar, and viscose linen in 1PC, 2PC, and 3PC seasonal styles.',
+    description: 'Warm rice karandi, morashi khaddar, and viscose linen in 1PC, 2PC, and 3PC seasonal styles.',
     image: '/assets/aistudio/Morashi_Khaddar_printed_15af3f87.jpeg',
     subcategories: ['1 Piece', '2 Piece', '3 Piece'],
     order: 5,
     isActive: true,
   },
   {
-    id: 'trousers-shalwar',
-    name: 'Trousers & Shalwar',
-    slug: 'trousers-shalwar',
-    description: 'Premium trousers, stretch pajamas, traditional pleated shalwars, and matching shalwar kameez.',
-    image: '/assets/aistudio/SILK_COLLECTION_2026_e0cd6ab7.jpeg',
-    subcategories: ['Trousers', 'Pajamas', 'Shalwar', 'Shalwar Kameez'],
+    id: 'casual-wear',
+    name: 'Casual Wear',
+    slug: 'casual-wear',
+    description: 'Effortless everyday Pakistani suits in printed silk co-ords, rice karandi, and viscose linen.',
+    image: '/assets/aistudio/Zesh_Essential_Co-ord_Printed_Silk_2PC__2__3a02ef29.jpeg',
     order: 6,
-    isActive: true,
-  },
-  {
-    id: 'wedding-wear',
-    name: 'Wedding Wear',
-    slug: 'wedding-wear',
-    description: 'Designer bridal lehengas, heavy organza adda work, zardozi and festive couture sets.',
-    image: '/assets/aistudio/weddingseason__3__6ca9845d.jpeg',
-    order: 7,
     isActive: true,
   },
   {
     id: 'formal-wear',
     name: 'Formal Wear',
     slug: 'formal-wear',
-    description: 'Regal bridal wear, peshwas, tilla embroidery, sequined organza, and festive wedding luxury.',
+    description: 'Regal peshwas, embroidered chiffon, tilla accents, and festive formal luxury.',
     image: '/assets/aistudio/MOST_ELEGANT_OUTFITT_BY_IZNIK__3__b0971e8e.jpeg',
+    order: 7,
+    isActive: true,
+  },
+  {
+    id: 'wedding-wear',
+    name: 'Wedding Wear',
+    slug: 'wedding-wear',
+    description: 'Designer bridal lehengas, heavy organza adda work, zardozi, and festive couture sets.',
+    image: '/assets/aistudio/weddingseason__3__6ca9845d.jpeg',
     order: 8,
     isActive: true,
   },
   {
-    id: 'casual-wear',
-    name: 'Casual Wear',
-    slug: 'casual-wear',
-    description: 'Effortless everyday Pakistani suits in premium rice karandi, viscose linen, khaddar, and printed silk.',
-    image: '/assets/aistudio/Breeze_Rice__karandi_embroidered_2PC__2__eeeb98c8.jpeg',
+    id: 'bottoms',
+    name: 'Bottoms',
+    slug: 'bottoms',
+    description: 'Tailored trousers, cigarette pants, and shalwars uploading soon.',
+    image: '/assets/aistudio/SILK_COLLECTION_2026_e0cd6ab7.jpeg',
     order: 9,
     isActive: true,
   },
@@ -107,7 +106,7 @@ export const INITIAL_CATEGORIES: Category[] = [
     name: 'Sale',
     slug: 'sale',
     description: 'Exclusive seasonal markdown offers with up to 40% off on signature NOOR STUDIO collections.',
-    image: '/assets/aistudio/MARIA_B_COUTURE_COLLECTION_48007866.jpeg',
+    image: '/assets/aistudio/MARIA_B_COUTURE_COLLECTION__4__fb96f40f.jpeg',
     order: 10,
     isActive: true,
   },
@@ -139,6 +138,10 @@ export const INITIAL_COUPONS: Coupon[] = [
 
 export async function seedDatabaseIfEmpty() {
   try {
+    const currentUser = auth.currentUser;
+    if (!currentUser || !currentUser.emailVerified || currentUser.email?.toLowerCase() !== 'sawairamaryam837@gmail.com') {
+      return;
+    }
     const productsSnap = await getDocs(collection(db, 'products'));
     const existingProductIds = new Set<string>();
     productsSnap.forEach((d) => existingProductIds.add(d.id));

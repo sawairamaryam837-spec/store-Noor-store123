@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase/config';
+import { db, auth } from '../firebase/config';
 import { CartItem, Coupon } from '../types';
 import { useAuth } from './AuthContext';
 import { INITIAL_COUPONS } from '../firebase/seed';
@@ -39,7 +39,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Load cart on init or user change
   useEffect(() => {
     async function loadCart() {
-      if (user) {
+      const isFirebaseUser = Boolean(user && auth.currentUser && auth.currentUser.uid === user.uid);
+      if (isFirebaseUser && user) {
         try {
           const cartDoc = await getDoc(doc(db, 'carts', user.uid));
           if (cartDoc.exists() && cartDoc.data()?.items) {
@@ -84,7 +85,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!hasLoaded) return;
 
-    if (user) {
+    const isFirebaseUser = Boolean(user && auth.currentUser && auth.currentUser.uid === user.uid);
+    if (isFirebaseUser && user) {
       setDoc(doc(db, 'carts', user.uid), {
         userId: user.uid,
         items,

@@ -256,8 +256,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
     );
 
     return (
-      <div className="max-w-3xl mx-auto px-4 py-12 animate-fadeIn">
-        <div className="bg-white rounded-2xl border border-[#EADBCE] p-6 sm:p-10 shadow-lg text-center space-y-6">
+      <div className="max-w-3xl mx-auto px-4 py-8 sm:py-12 animate-fadeIn">
+        <div className="bg-white rounded-2xl border border-[#EADBCE] p-5 sm:p-10 shadow-lg text-center space-y-6">
           <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
             <CheckCircle className="w-10 h-10" />
           </div>
@@ -327,15 +327,15 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
                   <img
                     src={item.image}
                     alt={item.productName}
-                    className="w-12 h-14 object-cover object-top rounded-md border border-[#EADBCE]"
+                    className="w-12 h-14 object-cover object-top rounded-md border border-[#EADBCE] shrink-0"
                   />
-                  <div className="flex-1">
-                    <p className="font-semibold text-[#1F1C1A]">{item.productName}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-[#1F1C1A] truncate">{item.productName}</p>
                     <p className="text-[11px] text-[#7A7169]">
                       Color: {item.colorName} | Size: {item.size} | Qty: {item.quantity}
                     </p>
                   </div>
-                  <span className="font-bold text-[#1F1C1A]">
+                  <span className="font-bold text-[#1F1C1A] shrink-0">
                     Rs. {(item.price * item.quantity).toLocaleString()}
                   </span>
                 </div>
@@ -391,18 +391,18 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
 
         {/* Email Receipt Modal Popup */}
         {showEmailReceiptModal && emailNotice?.html && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
-            <div className="bg-white rounded-2xl max-w-2xl w-full p-5 shadow-2xl border border-[#EADBCE] max-h-[85vh] flex flex-col">
-              <div className="flex items-center justify-between pb-3 border-b border-[#EADBCE]">
-                <div className="flex items-center gap-2">
-                  <Mail className="w-5 h-5 text-[#B88E3E]" />
-                  <h3 className="font-serif text-base font-bold text-[#1F1C1A]">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
+            <div className="bg-white rounded-2xl max-w-2xl w-full p-4 sm:p-5 shadow-2xl border border-[#EADBCE] max-h-[88vh] flex flex-col">
+              <div className="flex items-center justify-between pb-3 border-b border-[#EADBCE] gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Mail className="w-5 h-5 text-[#B88E3E] shrink-0" />
+                  <h3 className="font-serif text-sm sm:text-base font-bold text-[#1F1C1A] truncate">
                     NOOR STUDIO Email Receipt Preview
                   </h3>
                 </div>
                 <button
                   onClick={() => setShowEmailReceiptModal(false)}
-                  className="p-1 rounded-full hover:bg-gray-100 text-gray-500"
+                  className="p-1 rounded-full hover:bg-gray-100 text-gray-500 shrink-0"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -412,7 +412,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
                 <iframe
                   title="Order Confirmation Email"
                   srcDoc={emailNotice.html}
-                  className="w-full h-[500px] border-0 rounded-lg bg-white"
+                  className="w-full h-[55vh] sm:h-[500px] border-0 rounded-lg bg-white"
                 />
               </div>
 
@@ -432,7 +432,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fadeIn">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 animate-fadeIn">
       {/* Top Back Nav */}
       <button
         onClick={onBackToShop}
@@ -442,10 +442,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
         <span>Back to Shopping</span>
       </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
         {/* Customer Information Form (7 Cols) */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="bg-white rounded-2xl border border-[#EADBCE] p-6 shadow-sm">
+          <div className="bg-white rounded-2xl border border-[#EADBCE] p-4 sm:p-6 shadow-sm">
             <div className="border-b border-[#EADBCE] pb-3 mb-5">
               <h2 className="font-serif text-xl font-bold text-[#1F1C1A]">Delivery Information</h2>
               <p className="text-xs text-[#7A7169] mt-0.5">
@@ -583,7 +583,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
           </div>
 
           {/* Payment Method Selection */}
-          <div className="bg-white rounded-2xl border border-[#EADBCE] p-6 shadow-sm">
+          <div className="bg-white rounded-2xl border border-[#EADBCE] p-4 sm:p-6 shadow-sm">
             <h3 className="font-serif text-lg font-bold text-[#1F1C1A] mb-3">Payment Method</h3>
 
             <div className="space-y-3">
@@ -600,12 +600,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
                   name="payment"
                   checked={paymentMethod === 'COD'}
                   onChange={() => setPaymentMethod('COD')}
-                  className="mt-1 text-[#B88E3E] focus:ring-[#B88E3E]"
+                  className="mt-1 text-[#B88E3E] focus:ring-[#B88E3E] shrink-0"
                 />
-                <div className="flex-1 text-xs">
-                  <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0 text-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-1.5">
                     <span className="font-bold text-[#1F1C1A] text-sm">Cash on Delivery (COD)</span>
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold shrink-0">
                       Recommended
                     </span>
                   </div>
@@ -643,7 +643,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
 
         {/* Order Summary Sidebar (5 Cols) */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-white rounded-2xl border border-[#EADBCE] p-6 shadow-sm space-y-4">
+          <div className="bg-white rounded-2xl border border-[#EADBCE] p-4 sm:p-6 shadow-sm space-y-4">
             <h3 className="font-serif text-lg font-bold text-[#1F1C1A] border-b border-[#EADBCE] pb-3">
               Order Summary ({items.reduce((acc, i) => acc + i.quantity, 0)})
             </h3>
@@ -657,13 +657,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
                     alt={item.productName}
                     className="w-14 h-16 object-cover object-top rounded-lg bg-[#F7F4EE] border border-[#EADBCE] shrink-0"
                   />
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <p className="font-semibold text-[#1F1C1A] line-clamp-1">{item.productName}</p>
                     <p className="text-[11px] text-[#7A7169] mt-0.5">
                       {item.colorName} / {item.size} × {item.quantity}
                     </p>
                   </div>
-                  <span className="font-bold text-[#1F1C1A]">
+                  <span className="font-bold text-[#1F1C1A] shrink-0">
                     Rs. {(item.price * item.quantity).toLocaleString()}
                   </span>
                 </div>
@@ -672,19 +672,19 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
 
             {/* Calculations */}
             <div className="pt-3 border-t border-[#EADBCE] space-y-2 text-xs text-[#5A524C]">
-              <div className="flex justify-between">
+              <div className="flex justify-between gap-2">
                 <span>Subtotal</span>
-                <span className="font-semibold text-[#1F1C1A]">Rs. {subtotal.toLocaleString()}</span>
+                <span className="font-semibold text-[#1F1C1A] shrink-0">Rs. {subtotal.toLocaleString()}</span>
               </div>
               {discount > 0 && (
-                <div className="flex justify-between text-emerald-700 font-medium">
+                <div className="flex justify-between gap-2 text-emerald-700 font-medium">
                   <span>Discount ({coupon?.code})</span>
-                  <span>-Rs. {discount.toLocaleString()}</span>
+                  <span className="shrink-0">-Rs. {discount.toLocaleString()}</span>
                 </div>
               )}
-              <div className="flex justify-between">
+              <div className="flex justify-between gap-2">
                 <span>Nationwide Shipping</span>
-                <span>
+                <span className="shrink-0">
                   {shippingCost === 0 ? (
                     <strong className="text-emerald-700">FREE</strong>
                   ) : (
@@ -692,9 +692,9 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
                   )}
                 </span>
               </div>
-              <div className="flex justify-between text-base font-bold text-[#1F1C1A] pt-3 border-t border-[#EADBCE]">
+              <div className="flex flex-wrap justify-between items-baseline gap-2 text-sm sm:text-base font-bold text-[#1F1C1A] pt-3 border-t border-[#EADBCE]">
                 <span>Total Amount</span>
-                <span className="font-serif text-xl text-[#B88E3E]">
+                <span className="font-serif text-lg sm:text-xl text-[#B88E3E]">
                   Rs. {total.toLocaleString()}
                 </span>
               </div>

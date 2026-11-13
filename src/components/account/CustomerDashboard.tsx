@@ -18,8 +18,8 @@ import { useWishlist } from '../../context/WishlistContext';
 import { useStore } from '../../context/StoreContext';
 import { useCart } from '../../context/CartContext';
 import { Order, Product } from '../../types';
-import { collection, query, where, getDocs, orderBy, onSnapshot } from 'firebase/firestore';
-import { db } from '../../firebase/config';
+import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { db, auth } from '../../firebase/config';
 
 interface CustomerDashboardProps {
   initialTab?: 'orders' | 'profile' | 'wishlist' | 'tracking';
@@ -60,7 +60,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
 
   // Fetch logged in user orders
   useEffect(() => {
-    if (!user) {
+    if (!user || !auth.currentUser || auth.currentUser.uid !== user.uid) {
       setLoadingOrders(false);
       return;
     }
@@ -148,18 +148,18 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-fadeIn">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 animate-fadeIn">
       {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-white rounded-2xl border border-[#EADBCE] shadow-sm mb-8">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-[#FAF8F5] border border-[#EADBCE] flex items-center justify-center text-[#B88E3E]">
-            <UserIcon className="w-7 h-7" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 bg-white rounded-2xl border border-[#EADBCE] shadow-sm mb-6 sm:mb-8">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#FAF8F5] border border-[#EADBCE] flex items-center justify-center text-[#B88E3E] shrink-0">
+            <UserIcon className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
-          <div>
-            <h1 className="font-serif text-xl sm:text-2xl font-bold text-[#1F1C1A]">
+          <div className="min-w-0">
+            <h1 className="font-serif text-lg sm:text-2xl font-bold text-[#1F1C1A] truncate">
               {user?.displayName || 'Customer Account'}
             </h1>
-            <p className="text-xs text-[#7A7169] mt-0.5">
+            <p className="text-xs text-[#7A7169] mt-0.5 truncate">
               {user?.email || 'Track your shipments & manage saved addresses'}
             </p>
           </div>
@@ -168,7 +168,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
         {user && (
           <button
             onClick={() => signOut()}
-            className="px-4 py-2 rounded-xl border border-gray-300 hover:border-red-500 hover:text-red-600 text-xs font-semibold flex items-center justify-center gap-2 transition"
+            className="px-4 py-2 rounded-xl border border-gray-300 hover:border-red-500 hover:text-red-600 text-xs font-semibold flex items-center justify-center gap-2 transition shrink-0 self-start sm:self-auto"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Sign Out</span>
@@ -259,7 +259,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
             orders.map((ord) => (
               <div
                 key={ord.id}
-                className="bg-white rounded-2xl border border-[#EADBCE] p-6 shadow-sm space-y-4"
+                className="bg-white rounded-2xl border border-[#EADBCE] p-4 sm:p-6 shadow-sm space-y-4"
               >
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#EADBCE] pb-3 text-xs gap-2">
@@ -267,7 +267,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                     <span className="font-mono font-bold text-sm text-[#1F1C1A]">
                       Order #{ord.orderNumber}
                     </span>
-                    <span className="text-[#8C827A] ml-3">
+                    <span className="text-[#8C827A] block sm:inline sm:ml-3 mt-0.5 sm:mt-0">
                       Placed on {new Date(ord.createdAt).toLocaleDateString()}
                     </span>
                   </div>
@@ -290,7 +290,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
 
                 {/* Progress bar timeline */}
                 <div className="py-2">
-                  <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-semibold text-[#8C827A]">
+                  <div className="grid grid-cols-4 gap-1 sm:gap-2 text-center text-[9px] sm:text-[10px] font-semibold text-[#8C827A]">
                     <div className={ord.orderStatus !== 'Cancelled' ? 'text-emerald-700 font-bold' : ''}>
                       1. Confirmed
                     </div>
@@ -342,15 +342,15 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                       <img
                         src={i.image}
                         alt={i.productName}
-                        className="w-14 h-16 object-cover object-top rounded-lg border border-[#EADBCE] bg-[#FAF8F5]"
+                        className="w-14 h-16 object-cover object-top rounded-lg border border-[#EADBCE] bg-[#FAF8F5] shrink-0"
                       />
-                      <div className="flex-1">
-                        <p className="font-semibold text-[#1F1C1A]">{i.productName}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-[#1F1C1A] truncate">{i.productName}</p>
                         <p className="text-[11px] text-[#7A7169] mt-0.5">
                           Color: {i.colorName} • Size: {i.size} • Qty: {i.quantity}
                         </p>
                       </div>
-                      <span className="font-bold text-[#1F1C1A]">
+                      <span className="font-bold text-[#1F1C1A] shrink-0">
                         Rs. {(i.price * i.quantity).toLocaleString()}
                       </span>
                     </div>
@@ -435,8 +435,8 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
 
           {/* Tracked Order Result Card */}
           {trackedOrder && (
-            <div className="bg-white rounded-2xl border border-[#B88E3E] p-6 shadow-lg space-y-4 animate-fadeIn">
-              <div className="flex items-center justify-between border-b border-[#EADBCE] pb-3 text-xs">
+            <div className="bg-white rounded-2xl border border-[#B88E3E] p-4 sm:p-6 shadow-lg space-y-4 animate-fadeIn">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#EADBCE] pb-3 text-xs">
                 <div>
                   <span className="font-mono font-bold text-sm text-[#1F1C1A]">
                     {trackedOrder.orderNumber}
@@ -445,7 +445,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                     Placed: {new Date(trackedOrder.createdAt).toLocaleDateString()}
                   </span>
                 </div>
-                <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
+                <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold shrink-0">
                   {trackedOrder.orderStatus}
                 </span>
               </div>
@@ -497,7 +497,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
               {wishlistProducts.map((prod) => (
                 <div
                   key={prod.id}
@@ -540,7 +540,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
 
       {/* ================= PROFILE & SAVED ADDRESS ================= */}
       {activeTab === 'profile' && user && (
-        <div className="max-w-xl mx-auto bg-white rounded-2xl border border-[#EADBCE] p-6 sm:p-8 shadow-sm space-y-4">
+        <div className="max-w-xl mx-auto bg-white rounded-2xl border border-[#EADBCE] p-4 sm:p-8 shadow-sm space-y-4">
           <h3 className="font-serif text-xl font-bold text-[#1F1C1A]">Default Shipping Address</h3>
           <p className="text-xs text-[#7A7169]">
             This address will automatically pre-fill when checking out with Cash on Delivery.
@@ -587,7 +587,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block font-semibold text-[#1F1C1A] mb-1">City</label>
                 <input

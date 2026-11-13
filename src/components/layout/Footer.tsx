@@ -20,10 +20,10 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   };
 
   return (
-    <footer className="bg-[#191715] text-[#FAF8F5] pt-16 pb-8 border-t border-[#332F2B]">
+    <footer className="bg-[#191715] text-[#FAF8F5] pt-12 sm:pt-16 pb-8 border-t border-[#332F2B]">
       {/* Trust Badges */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14 border-b border-[#2D2825]">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center sm:text-left">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10 sm:pb-14 border-b border-[#2D2825]">
+        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-5 sm:gap-6 text-center sm:text-left">
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="w-11 h-11 rounded-full bg-[#262220] flex items-center justify-center text-[#E89A97]">
               <Truck className="w-5 h-5" />
@@ -67,8 +67,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
       </div>
 
       {/* Main Footer Links */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-10">
           {/* Brand Column */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-3.5">
@@ -82,7 +82,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   NOOR STUDIO
                 </h3>
                 <p className="text-[10px] uppercase tracking-widest text-[#C5A059] font-medium">
-                  Wear Your Elegance, Style Of Excellence
+                  Wear Your Elegance Style Of Excellence
                 </p>
               </div>
             </div>
@@ -127,65 +127,70 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             </div>
           </div>
 
-          {/* Shop Categories */}
+          {/* Shop Categories - Exact Sequence 1 to 10 */}
           <div className="space-y-3">
             <p className="font-serif text-sm tracking-wider uppercase font-semibold text-white">Collections</p>
             <ul className="space-y-2 text-xs text-[#B5ABA1]">
               <li>
                 <button onClick={() => onNavigate('shop', 'New Arrivals')} className="hover:text-white transition">
-                  New Arrivals
+                  1. New Arrivals
                 </button>
               </li>
               <li>
                 <button onClick={() => onNavigate('shop', 'Stitched')} className="hover:text-white transition">
-                  Stitched (Pret)
+                  2. Stitched
                 </button>
               </li>
               <li>
                 <button onClick={() => onNavigate('shop', 'Unstitched')} className="hover:text-white transition">
-                  Unstitched Fabrics
+                  3. Unstitched
                 </button>
               </li>
               <li>
                 <button onClick={() => onNavigate('shop', 'Summer Wear')} className="hover:text-white transition">
-                  Summer Lawn Collection
+                  4. Summer Wear
                 </button>
               </li>
               <li>
                 <button onClick={() => onNavigate('shop', 'Winter Wear')} className="hover:text-white transition">
-                  Winter Velvet & Shawls
-                </button>
-              </li>
-              <li>
-                <button onClick={() => onNavigate('shop', 'Wedding Wear')} className="hover:text-white transition">
-                  Wedding Wear & Lehengas
-                </button>
-              </li>
-              <li>
-                <button onClick={() => onNavigate('shop', 'Formal Wear')} className="hover:text-white transition">
-                  Formal & Party Wear
+                  5. Winter Wear
                 </button>
               </li>
               <li>
                 <button onClick={() => onNavigate('shop', 'Casual Wear')} className="hover:text-white transition">
-                  Casual Wear & Daily Pret
+                  6. Casual Wear
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate('shop', 'Formal Wear')} className="hover:text-white transition">
+                  7. Formal Wear
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate('shop', 'Wedding Wear')} className="hover:text-white transition">
+                  8. Wedding Wear
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate('shop', 'Bottoms')} className="hover:text-white transition">
+                  9. Bottoms
                 </button>
               </li>
               <li>
                 <button onClick={() => onNavigate('shop', 'Sale')} className="text-red-400 hover:text-red-300 font-semibold transition">
-                  Sale & Clearance
+                  10. Sale (Hot Offers)
                 </button>
               </li>
             </ul>
           </div>
 
-          {/* Customer Care */}
+          {/* Customer Care & Policies */}
           <div className="space-y-3">
-            <p className="font-serif text-sm tracking-wider uppercase font-semibold text-white">Customer Care</p>
+            <p className="font-serif text-sm tracking-wider uppercase font-semibold text-white">Policies & Care</p>
             <ul className="space-y-2 text-xs text-[#B5ABA1]">
               <li>
                 <button onClick={() => onNavigate('about')} className="hover:text-white transition">
-                  About NOOR STUDIO
+                  About Us
                 </button>
               </li>
               <li>
@@ -194,28 +199,33 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 </button>
               </li>
               <li>
+                <button onClick={() => onNavigate('faqs')} className="hover:text-white transition">
+                  FAQs
+                </button>
+              </li>
+              <li>
                 <button onClick={() => onNavigate('shipping-policy')} className="hover:text-white transition">
-                  Shipping & Delivery
+                  Shipping Policy
                 </button>
               </li>
               <li>
                 <button onClick={() => onNavigate('returns-policy')} className="hover:text-white transition">
-                  Return & Exchange Policy
-                </button>
-              </li>
-              <li>
-                <button onClick={() => onNavigate('faqs')} className="hover:text-white transition">
-                  Frequently Asked Questions
-                </button>
-              </li>
-              <li>
-                <button onClick={() => onNavigate('tracking')} className="hover:text-white transition">
-                  Track Your Order
+                  Return and Exchange Policy
                 </button>
               </li>
               <li>
                 <button onClick={() => onNavigate('privacy-policy')} className="hover:text-white transition">
                   Privacy Policy
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate('terms-and-conditions')} className="hover:text-white transition">
+                  Terms and Conditions
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate('tracking')} className="hover:text-white transition">
+                  Track Your Order
                 </button>
               </li>
             </ul>
@@ -241,7 +251,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                     placeholder="Enter your email address"
                     value={newsletterEmail}
                     onChange={(e) => setNewsletterEmail(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded bg-[#262220] border border-[#403B37] text-xs text-white placeholder-[#787069] focus:outline-none focus:border-[#C5A059]"
+                    className="w-full pl-3.5 pr-20 py-2.5 rounded bg-[#262220] border border-[#403B37] text-xs text-white placeholder-[#787069] focus:outline-none focus:border-[#C5A059]"
                   />
                   <button
                     type="submit"
@@ -257,7 +267,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
             <div className="pt-2">
               <p className="text-xs font-semibold text-white mb-2">Payment Methods</p>
-              <div className="flex items-center gap-2 text-xs">
+              <div className="flex flex-wrap items-center gap-2 text-xs">
                 <span className="px-2.5 py-1 rounded bg-[#262220] border border-[#3E3834] font-medium text-[#FAF8F5]">
                   💵 Cash on Delivery
                 </span>

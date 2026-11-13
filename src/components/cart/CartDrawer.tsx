@@ -52,7 +52,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
         onClick={() => setIsCartOpen(false)}
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+      <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10">
         <div className="w-screen max-w-md bg-[#FAF8F5] shadow-2xl flex flex-col border-l border-[#EADBCE]">
           {/* Header */}
           <div className="p-4 sm:p-5 bg-white border-b border-[#EADBCE] flex items-center justify-between">
@@ -71,10 +71,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
           </div>
 
           {/* Free Shipping Progress Meter */}
-          <div className="p-3.5 bg-[#F4EFEB] border-b border-[#EADBCE] text-xs">
-            <div className="flex items-center justify-between mb-1.5 font-medium">
-              <span className="flex items-center gap-1.5 text-[#1F1C1A]">
-                <Truck className="w-4 h-4 text-[#B88E3E]" />
+          <div className="p-3 sm:p-3.5 bg-[#F4EFEB] border-b border-[#EADBCE] text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-1 mb-1.5 font-medium">
+              <span className="flex items-center gap-1.5 text-[#1F1C1A] min-w-0">
+                <Truck className="w-4 h-4 text-[#B88E3E] shrink-0" />
                 {amountNeededForFreeShipping === 0 ? (
                   <span className="text-emerald-700 font-semibold">🎉 You unlocked FREE Nationwide Delivery!</span>
                 ) : (
@@ -83,7 +83,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                   </span>
                 )}
               </span>
-              <span className="text-[11px] text-[#8C827A]">{Math.round(freeShippingProgress)}%</span>
+              <span className="text-[11px] text-[#8C827A] shrink-0">{Math.round(freeShippingProgress)}%</span>
             </div>
             <div className="w-full h-1.5 bg-[#D9CCC2]/40 rounded-full overflow-hidden">
               <div
@@ -125,7 +125,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                   />
 
                   {/* Details */}
-                  <div className="flex-1 flex flex-col justify-between">
+                  <div className="flex-1 min-w-0 flex flex-col justify-between">
                     <div>
                       <div className="flex items-start justify-between gap-2">
                         <h4 className="font-serif text-xs font-bold text-[#1F1C1A] line-clamp-1">
@@ -133,7 +133,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                         </h4>
                         <button
                           onClick={() => removeFromCart(item.id)}
-                          className="text-gray-300 hover:text-red-600 transition"
+                          className="text-gray-300 hover:text-red-600 transition shrink-0"
                           title="Remove item"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -141,10 +141,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                       </div>
 
                       {/* Selected Variations */}
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-[#6F665F]">
+                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-[#6F665F]">
                         <span className="flex items-center gap-1">
                           <span
-                            className="w-2.5 h-2.5 rounded-full border border-black/20"
+                            className="w-2.5 h-2.5 rounded-full border border-black/20 shrink-0"
                             style={{ backgroundColor: item.colorHex }}
                           />
                           {item.colorName}
@@ -155,8 +155,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                     </div>
 
                     {/* Price and Quantity Stepper */}
-                    <div className="mt-2 flex items-center justify-between">
-                      <div className="flex items-center border border-[#D9CCC2] rounded-md bg-[#FAF8F5]">
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <div className="flex items-center border border-[#D9CCC2] rounded-md bg-[#FAF8F5] shrink-0">
                         <button
                           onClick={() => updateQuantity(item.id, -1)}
                           className="w-7 h-7 flex items-center justify-center text-xs font-semibold hover:bg-white transition"
@@ -175,7 +175,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                         </button>
                       </div>
 
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         <span className="text-xs font-bold text-[#1F1C1A]">
                           Rs. {(item.price * item.quantity).toLocaleString()}
                         </span>
@@ -192,14 +192,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
             <div className="p-4 sm:p-5 bg-white border-t border-[#EADBCE] space-y-3.5">
               {/* Coupon Form */}
               {coupon ? (
-                <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1.5 text-emerald-800">
-                    <Tag className="w-3.5 h-3.5" />
-                    <span>Coupon <strong>{coupon.code}</strong> applied (-Rs. {discount.toLocaleString()})</span>
+                <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-1.5 text-emerald-800 min-w-0">
+                    <Tag className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">Coupon <strong>{coupon.code}</strong> applied (-Rs. {discount.toLocaleString()})</span>
                   </div>
                   <button
                     onClick={removeCoupon}
-                    className="text-xs text-red-600 hover:underline font-semibold"
+                    className="text-xs text-red-600 hover:underline font-semibold shrink-0"
                   >
                     Remove
                   </button>
@@ -211,11 +211,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                     placeholder="Coupon Code (e.g. NOOR10)"
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-lg border border-[#D9CCC2] text-xs uppercase placeholder:normal-case focus:outline-none focus:border-[#B88E3E]"
+                    className="min-w-0 flex-1 px-3 py-2 rounded-lg border border-[#D9CCC2] text-xs uppercase placeholder:normal-case focus:outline-none focus:border-[#B88E3E]"
                   />
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-lg bg-[#1F1C1A] text-white text-xs font-semibold hover:bg-[#B88E3E] transition"
+                    className="px-4 py-2 rounded-lg bg-[#1F1C1A] text-white text-xs font-semibold hover:bg-[#B88E3E] transition shrink-0"
                   >
                     Apply
                   </button>

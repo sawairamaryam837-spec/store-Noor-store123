@@ -89,8 +89,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-[#EADBCE] relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+      <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-8 shadow-2xl border border-[#EADBCE] relative max-h-[92vh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-black transition"
@@ -109,7 +109,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             NOOR STUDIO
           </span>
           <p className="text-[10px] uppercase tracking-widest text-[#B88E3E] font-medium mt-0.5">
-            Wear Your Elegance, Style Of Excellence
+            Wear Your Elegance Style Of Excellence
           </p>
           <p className="text-xs text-[#8C827A] mt-1">
             {mode === 'signin' && 'Sign in to access your orders and saved wishlist'}
@@ -304,7 +304,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           <p className="text-[10px] uppercase font-bold tracking-wider text-[#A89D93] mb-2">
             Instant Preview Access
           </p>
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex flex-wrap items-center justify-center gap-2">
             <button
               type="button"
               onClick={() => {

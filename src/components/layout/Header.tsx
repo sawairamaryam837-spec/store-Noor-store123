@@ -47,7 +47,6 @@ export const Header: React.FC<HeaderProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [summerDropdownOpen, setSummerDropdownOpen] = useState(false);
   const [winterDropdownOpen, setWinterDropdownOpen] = useState(false);
-  const [trousersDropdownOpen, setTrousersDropdownOpen] = useState(false);
 
   const handleNavClick = (view: string, category: string | null = null, subcategory: string | null = null) => {
     setCurrentView(view);
@@ -60,112 +59,120 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="sticky top-0 z-40 bg-[#FAF8F5]/95 backdrop-blur-md border-b border-[#EADBCE]/80 transition-all duration-300">
       {/* Top Announcement Bar */}
-      <div className="bg-[#1F1C1A] text-[#FAF8F5] text-xs py-2 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 text-center sm:text-left">
-          <p className="font-light tracking-wide text-xs flex items-center justify-center gap-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-[#E89A97] animate-pulse"></span>
-            {settings.announcement || '✨ Free Nationwide Delivery on Orders Above Rs. 5,000 | Cash on Delivery Available'}
+      <div className="bg-[#1F1C1A] text-[#FAF8F5] text-[11px] sm:text-xs py-1.5 sm:py-2 px-3 sm:px-4">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-center gap-1.5 sm:gap-2 text-center lg:text-left">
+          <p className="font-light tracking-wide text-[11px] sm:text-xs flex items-center justify-center gap-2 leading-snug">
+            <span className="inline-block w-2 h-2 rounded-full bg-[#E89A97] animate-pulse shrink-0"></span>
+            <span>
+              {settings.announcement || '✨ Free Nationwide Delivery on Orders Above Rs. 5,000 | Cash on Delivery Available'}
+            </span>
           </p>
-          <div className="flex items-center gap-4 text-xs font-medium text-[#EADBCE]">
+          <div className="flex flex-wrap items-center justify-center gap-x-2.5 sm:gap-x-4 gap-y-1 text-[11px] sm:text-xs font-medium text-[#EADBCE]">
             <a
               href={`tel:+92${settings.helpline ? settings.helpline.replace(/^0/, '') : '3284454746'}`}
-              className="hover:text-white transition flex items-center gap-1.5"
+              className="hover:text-white transition flex items-center gap-1 whitespace-nowrap"
             >
-              <Phone className="w-3 h-3 text-[#E89A97]" />
-              Helpline: {settings.helpline || '03284454746'}
+              <Phone className="w-3 h-3 text-[#E89A97] shrink-0" />
+              <span>Helpline: {settings.helpline || '03284454746'}</span>
             </a>
-            <span className="text-[#555]">|</span>
+            <span className="text-[#555] hidden xs:inline">|</span>
             <a
               href="https://wa.me/923284454746"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[#25D366] transition flex items-center gap-1 font-semibold"
+              className="hover:text-[#25D366] transition flex items-center gap-1 font-semibold whitespace-nowrap"
             >
               WhatsApp Support
             </a>
             <span className="text-[#555]">|</span>
             <button
               onClick={() => handleNavClick('tracking')}
-              className="hover:text-white transition underline underline-offset-2"
+              className="hover:text-white transition underline underline-offset-2 whitespace-nowrap"
             >
               Track Order
             </button>
-            <span className="text-[#555]">|</span>
-            <button
-              onClick={() => handleNavClick('admin')}
-              className="px-2.5 py-0.5 rounded-full bg-[#C5A059] text-[#191715] hover:bg-white text-xs font-bold flex items-center gap-1 transition shadow-sm"
-              title="Open Admin Dashboard"
-            >
-              <ShieldCheck className="w-3 h-3 text-[#191715]" />
-              <span>Admin Portal</span>
-            </button>
+            {isAdmin && (
+              <>
+                <span className="text-[#555]">|</span>
+                <button
+                  onClick={() => handleNavClick('admin')}
+                  className="px-2.5 py-0.5 rounded-full bg-[#C5A059] text-[#191715] hover:bg-white text-[11px] font-bold flex items-center gap-1 transition shadow-sm whitespace-nowrap"
+                  title="Open Admin Dashboard"
+                >
+                  <ShieldCheck className="w-3 h-3 text-[#191715]" />
+                  <span>Admin Portal</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
 
       {/* Main Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between gap-2 h-16 sm:h-20">
           {/* Mobile menu trigger */}
-          <div className="flex items-center lg:hidden">
+          <div className="flex items-center lg:hidden shrink-0">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-[#1F1C1A] hover:text-[#B88E3E] transition"
+              className="p-1.5 sm:p-2 text-[#1F1C1A] hover:text-[#B88E3E] transition"
               aria-label="Toggle navigation menu"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6" />}
             </button>
             <button
               onClick={openSearchModal}
-              className="p-2 ml-1 text-[#1F1C1A] hover:text-[#B88E3E] transition"
+              className="p-1.5 sm:p-2 text-[#1F1C1A] hover:text-[#B88E3E] transition"
               aria-label="Search products"
             >
-              <Search className="w-5 h-5" />
+              <Search className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
 
           {/* NOOR STUDIO Brand Logo */}
           <div
-            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group"
+            className="flex items-center gap-2 sm:gap-3 cursor-pointer group min-w-0"
             onClick={() => handleNavClick('home')}
           >
             <img
               src="/assets/aistudio/logo_8d8d5177.jpeg"
               alt="NOOR STUDIO"
-              className="h-10 sm:h-12 w-auto object-contain rounded-lg shadow-sm border border-[#EADBCE] group-hover:scale-105 transition-transform duration-300 bg-black"
+              className="h-8 sm:h-11 lg:h-12 w-auto object-contain rounded-lg shadow-sm border border-[#EADBCE] group-hover:scale-105 transition-transform duration-300 bg-black shrink-0"
             />
-            <div className="flex flex-col items-start">
-              <span className="font-serif text-lg sm:text-2xl lg:text-3xl tracking-[0.18em] font-bold text-[#1F1C1A] uppercase leading-tight">
+            <div className="flex flex-col items-start min-w-0">
+              <span className="font-serif text-sm xs:text-base sm:text-2xl lg:text-3xl tracking-[0.1em] sm:tracking-[0.18em] font-bold text-[#1F1C1A] uppercase leading-tight whitespace-nowrap">
                 NOOR STUDIO
               </span>
-              <span className="text-[9px] uppercase tracking-[0.25em] text-[#8C827A] font-medium hidden sm:block">
-                Wear Your Elegance, Style Of Excellence
+              <span className="text-[9px] uppercase tracking-[0.25em] text-[#8C827A] font-medium hidden sm:block truncate">
+                Wear Your Elegance Style Of Excellence
               </span>
             </div>
           </div>
 
           {/* Desktop Search Bar */}
-          <div className="hidden lg:flex items-center flex-1 max-w-sm mx-10">
+          <div className="hidden lg:flex items-center flex-1 max-w-xs xl:max-w-sm mx-6 xl:mx-10">
             <div
               onClick={openSearchModal}
               className="w-full flex items-center gap-3 px-4 py-2 rounded-full border border-[#E0D5CB] bg-[#F4EFEB]/70 text-[#7A7169] text-sm cursor-pointer hover:border-[#C5A059] hover:bg-white transition"
             >
-              <Search className="w-4 h-4 text-[#A89D93]" />
-              <span className="font-light">Search luxury pret, velvet, chiffon...</span>
+              <Search className="w-4 h-4 text-[#A89D93] shrink-0" />
+              <span className="font-light truncate">Search luxury pret, velvet, chiffon...</span>
             </div>
           </div>
 
           {/* Action Icons */}
-          <div className="flex items-center gap-3 sm:gap-5">
-            {/* Prominent Admin Panel Button */}
-            <button
-              onClick={() => handleNavClick('admin')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1F1C1A] text-[#FAF8F5] hover:bg-[#B88E3E] text-xs font-semibold shadow-sm border border-[#C5A059]/40 transition group"
-              title="Open NOOR STUDIO Admin Dashboard"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-[#E89A97] group-hover:scale-110 transition-transform" />
-              <span>Admin Panel</span>
-            </button>
+          <div className="flex items-center gap-1 xs:gap-2 sm:gap-4 shrink-0">
+            {/* Admin Panel Button - Only visible to authorized administrators */}
+            {isAdmin && (
+              <button
+                onClick={() => handleNavClick('admin')}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1F1C1A] text-[#FAF8F5] hover:bg-[#B88E3E] text-xs font-semibold shadow-sm border border-[#C5A059]/40 transition group whitespace-nowrap"
+                title="Open NOOR STUDIO Admin Dashboard"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-[#E89A97] group-hover:scale-110 transition-transform" />
+                <span>Admin Panel</span>
+              </button>
+            )}
 
             {/* Account */}
             <button
@@ -176,11 +183,11 @@ export const Header: React.FC<HeaderProps> = ({
                   openAuthModal();
                 }
               }}
-              className="p-2 text-[#1F1C1A] hover:text-[#B88E3E] transition flex items-center gap-1.5"
+              className="p-1.5 sm:p-2 text-[#1F1C1A] hover:text-[#B88E3E] transition flex items-center gap-1.5"
               aria-label="Customer account"
               title={user ? `Signed in as ${user.displayName || user.email}` : 'Customer Sign In'}
             >
-              <UserIcon className="w-5 h-5" />
+              <UserIcon className="w-4 h-4 sm:w-5 sm:h-5" />
               <span className="text-xs font-medium hidden md:inline">
                 {user ? (user.displayName ? user.displayName.split(' ')[0] : 'Account') : 'Sign In'}
               </span>
@@ -189,13 +196,13 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Wishlist */}
             <button
               onClick={() => handleNavClick('wishlist')}
-              className="p-2 text-[#1F1C1A] hover:text-[#B88E3E] transition relative"
+              className="p-1.5 sm:p-2 text-[#1F1C1A] hover:text-[#B88E3E] transition relative"
               aria-label="Wishlist"
               title="View Wishlist"
             >
-              <Heart className="w-5 h-5" />
+              <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
               {wishlistIds.length > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-[#E89A97] text-[#1F1C1A] font-bold text-[10px] flex items-center justify-center">
+                <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-4 h-4 rounded-full bg-[#E89A97] text-[#1F1C1A] font-bold text-[10px] flex items-center justify-center">
                   {wishlistIds.length}
                 </span>
               )}
@@ -204,20 +211,20 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Shopping Cart */}
             <button
               onClick={() => setIsCartOpen(true)}
-              className="p-2 text-[#FAF8F5] bg-[#1F1C1A] hover:bg-[#B88E3E] rounded-full transition flex items-center gap-2 px-3.5 shadow-sm"
+              className="py-1.5 sm:py-2 px-2.5 sm:px-3.5 text-[#FAF8F5] bg-[#1F1C1A] hover:bg-[#B88E3E] rounded-full transition flex items-center gap-1.5 sm:gap-2 shadow-sm"
               aria-label="Shopping Cart"
             >
-              <ShoppingBag className="w-4 h-4 text-[#EADBCE]" />
+              <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#EADBCE]" />
               <span className="text-xs font-semibold">{totalItems}</span>
             </button>
           </div>
         </div>
 
         {/* Desktop Category Navigation */}
-        <nav className="hidden lg:flex items-center justify-center space-x-7 py-3 border-t border-[#EADBCE]/50 text-[13px] font-medium tracking-wider uppercase text-[#332F2B]">
+        <nav className="hidden lg:flex flex-wrap items-center justify-center gap-x-4 xl:gap-x-6 gap-y-1.5 py-2.5 xl:py-3 border-t border-[#EADBCE]/50 text-[11px] xl:text-[13px] font-medium tracking-wider uppercase text-[#332F2B]">
           <button
             onClick={() => handleNavClick('home')}
-            className={`hover:text-[#B88E3E] transition py-1 relative ${
+            className={`hover:text-[#B88E3E] transition py-1 relative whitespace-nowrap ${
               currentView === 'home' ? 'text-[#B88E3E] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#B88E3E]' : ''
             }`}
           >
@@ -226,7 +233,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={() => handleNavClick('shop', 'New Arrivals')}
-            className={`hover:text-[#B88E3E] transition py-1 relative ${
+            className={`hover:text-[#B88E3E] transition py-1 relative whitespace-nowrap ${
               selectedCategory === 'New Arrivals' ? 'text-[#B88E3E] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#B88E3E]' : ''
             }`}
           >
@@ -235,7 +242,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={() => handleNavClick('shop', 'Stitched')}
-            className={`hover:text-[#B88E3E] transition py-1 relative ${
+            className={`hover:text-[#B88E3E] transition py-1 relative whitespace-nowrap ${
               selectedCategory === 'Stitched' ? 'text-[#B88E3E] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#B88E3E]' : ''
             }`}
           >
@@ -244,7 +251,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={() => handleNavClick('shop', 'Unstitched')}
-            className={`hover:text-[#B88E3E] transition py-1 relative ${
+            className={`hover:text-[#B88E3E] transition py-1 relative whitespace-nowrap ${
               selectedCategory === 'Unstitched' ? 'text-[#B88E3E] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#B88E3E]' : ''
             }`}
           >
@@ -259,7 +266,7 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <button
               onClick={() => handleNavClick('shop', 'Summer Wear')}
-              className={`hover:text-[#B88E3E] transition py-1 flex items-center gap-1 ${
+              className={`hover:text-[#B88E3E] transition py-1 flex items-center gap-1 whitespace-nowrap ${
                 selectedCategory === 'Summer Wear' ? 'text-[#B88E3E] font-semibold' : ''
               }`}
             >
@@ -278,19 +285,19 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={() => handleNavClick('shop', 'Summer Wear', '1 Piece')}
                   className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block"
                 >
-                  1 Piece (Kurti / Shirt)
+                  1 Piece
                 </button>
                 <button
                   onClick={() => handleNavClick('shop', 'Summer Wear', '2 Piece')}
                   className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block"
                 >
-                  2 Piece (Shirt + Trouser)
+                  2 Piece
                 </button>
                 <button
                   onClick={() => handleNavClick('shop', 'Summer Wear', '3 Piece')}
                   className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block"
                 >
-                  3 Piece (Complete Suit)
+                  3 Piece
                 </button>
               </div>
             )}
@@ -304,7 +311,7 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <button
               onClick={() => handleNavClick('shop', 'Winter Wear')}
-              className={`hover:text-[#B88E3E] transition py-1 flex items-center gap-1 ${
+              className={`hover:text-[#B88E3E] transition py-1 flex items-center gap-1 whitespace-nowrap ${
                 selectedCategory === 'Winter Wear' ? 'text-[#B88E3E] font-semibold' : ''
               }`}
             >
@@ -323,105 +330,70 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={() => handleNavClick('shop', 'Winter Wear', '1 Piece')}
                   className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block"
                 >
-                  1 Piece (Kurta / Shirt)
+                  1 Piece
                 </button>
                 <button
                   onClick={() => handleNavClick('shop', 'Winter Wear', '2 Piece')}
                   className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block"
                 >
-                  2 Piece (Karandi / Silk Set)
+                  2 Piece
                 </button>
                 <button
                   onClick={() => handleNavClick('shop', 'Winter Wear', '3 Piece')}
                   className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block"
                 >
-                  3 Piece (Suit with Shawl)
+                  3 Piece
                 </button>
               </div>
             )}
           </div>
 
-          {/* Trousers, Pajamas & Shalwar Kameez Section Dropdown */}
-          <div
-            className="relative"
-            onMouseEnter={() => setTrousersDropdownOpen(true)}
-            onMouseLeave={() => setTrousersDropdownOpen(false)}
-          >
-            <button
-              onClick={() => handleNavClick('shop', 'Trousers & Shalwar')}
-              className={`hover:text-[#B88E3E] transition py-1 flex items-center gap-1 ${
-                selectedCategory === 'Trousers & Shalwar' ? 'text-[#B88E3E] font-semibold' : ''
-              }`}
-            >
-              Trousers & Shalwar
-              <ChevronDown className="w-3.5 h-3.5 opacity-70" />
-            </button>
-            {trousersDropdownOpen && (
-              <div className="absolute top-full left-0 w-48 bg-white shadow-xl rounded-md border border-[#EADBCE] py-2 z-50 animate-fadeIn">
-                <button
-                  onClick={() => handleNavClick('shop', 'Trousers & Shalwar', null)}
-                  className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block font-medium"
-                >
-                  All Trousers & Shalwars
-                </button>
-                <button
-                  onClick={() => handleNavClick('shop', 'Trousers & Shalwar', 'Trousers')}
-                  className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block"
-                >
-                  Trousers (Straight & Silk)
-                </button>
-                <button
-                  onClick={() => handleNavClick('shop', 'Trousers & Shalwar', 'Pajamas')}
-                  className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block"
-                >
-                  Pajamas (Cotton Stretch)
-                </button>
-                <button
-                  onClick={() => handleNavClick('shop', 'Trousers & Shalwar', 'Shalwar')}
-                  className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block"
-                >
-                  Shalwar (Pleated & Tulip)
-                </button>
-                <button
-                  onClick={() => handleNavClick('shop', 'Trousers & Shalwar', 'Shalwar Kameez')}
-                  className="w-full text-left px-4 py-2 text-xs hover:bg-[#FAF8F5] hover:text-[#B88E3E] transition block"
-                >
-                  Shalwar Kameez (2PC Suits)
-                </button>
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={() => handleNavClick('shop', 'Wedding Wear')}
-            className={`hover:text-[#B88E3E] transition py-1 relative ${
-              selectedCategory === 'Wedding Wear' ? 'text-[#B88E3E] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#B88E3E]' : ''
-            }`}
-          >
-            Wedding Wear
-          </button>
-
-          <button
-            onClick={() => handleNavClick('shop', 'Formal Wear')}
-            className={`hover:text-[#B88E3E] transition py-1 relative ${
-              selectedCategory === 'Formal Wear' ? 'text-[#B88E3E] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#B88E3E]' : ''
-            }`}
-          >
-            Formal Wear
-          </button>
-
+          {/* 6. Casual Wear */}
           <button
             onClick={() => handleNavClick('shop', 'Casual Wear')}
-            className={`hover:text-[#B88E3E] transition py-1 relative ${
+            className={`hover:text-[#B88E3E] transition py-1 relative whitespace-nowrap ${
               selectedCategory === 'Casual Wear' ? 'text-[#B88E3E] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#B88E3E]' : ''
             }`}
           >
             Casual Wear
           </button>
 
+          {/* 7. Formal Wear */}
+          <button
+            onClick={() => handleNavClick('shop', 'Formal Wear')}
+            className={`hover:text-[#B88E3E] transition py-1 relative whitespace-nowrap ${
+              selectedCategory === 'Formal Wear' ? 'text-[#B88E3E] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#B88E3E]' : ''
+            }`}
+          >
+            Formal Wear
+          </button>
+
+          {/* 8. Wedding Wear */}
+          <button
+            onClick={() => handleNavClick('shop', 'Wedding Wear')}
+            className={`hover:text-[#B88E3E] transition py-1 relative whitespace-nowrap ${
+              selectedCategory === 'Wedding Wear' ? 'text-[#B88E3E] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#B88E3E]' : ''
+            }`}
+          >
+            Wedding Wear
+          </button>
+
+          {/* 9. Bottoms */}
+          <button
+            onClick={() => handleNavClick('shop', 'Bottoms')}
+            className={`hover:text-[#B88E3E] transition py-1 relative whitespace-nowrap ${
+              selectedCategory === 'Bottoms'
+                ? 'text-[#B88E3E] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#B88E3E]'
+                : ''
+            }`}
+          >
+            Bottoms
+          </button>
+
+          {/* 10. Sale */}
           <button
             onClick={() => handleNavClick('shop', 'Sale')}
-            className="hover:text-red-700 transition py-1 text-red-600 font-semibold flex items-center gap-1"
+            className="hover:text-red-700 transition py-1 text-red-600 font-semibold flex items-center gap-1 whitespace-nowrap"
           >
             <span>Sale</span>
             <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-bold">HOT</span>
@@ -429,200 +401,230 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={() => handleNavClick('contact')}
-            className={`hover:text-[#B88E3E] transition py-1 relative ${
+            className={`hover:text-[#B88E3E] transition py-1 relative whitespace-nowrap ${
               currentView === 'contact' ? 'text-[#B88E3E] font-semibold after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#B88E3E]' : ''
             }`}
           >
             Contact Us
           </button>
 
-          <button
-            onClick={() => handleNavClick('admin')}
-            className={`hover:text-[#B88E3E] transition py-1 relative flex items-center gap-1 font-bold text-[#B88E3E] ${
-              currentView === 'admin' ? 'after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#B88E3E]' : ''
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Admin</span>
-          </button>
+          {/* Admin link strictly for verified admins */}
+          {isAdmin && (
+            <button
+              onClick={() => handleNavClick('admin')}
+              className={`hover:text-[#B88E3E] transition py-1 relative flex items-center gap-1 font-bold text-[#B88E3E] whitespace-nowrap ${
+                currentView === 'admin' ? 'after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#B88E3E]' : ''
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Admin</span>
+            </button>
+          )}
         </nav>
       </div>
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-[#EADBCE] bg-[#FAF8F5] px-6 py-6 space-y-4 max-h-[80vh] overflow-y-auto animate-fadeIn">
-          {/* Prominent Mobile Admin Portal Banner */}
-          <div className="pb-3 border-b border-[#EADBCE]">
-            <button
-              onClick={() => handleNavClick('admin')}
-              className="w-full py-2.5 px-3.5 rounded-xl bg-[#1F1C1A] text-white hover:bg-[#B88E3E] text-xs font-bold flex items-center justify-between shadow-sm transition"
-            >
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-[#E89A97]" />
-                <span>Admin Panel & Orders</span>
-              </div>
-              <span className="text-[10px] bg-[#C5A059] text-[#191715] px-2 py-0.5 rounded font-bold uppercase">
-                Manage
-              </span>
-            </button>
-          </div>
+        <div className="lg:hidden border-t border-[#EADBCE] bg-[#FAF8F5] px-4 sm:px-6 py-4 sm:py-5 space-y-4 max-h-[82vh] overflow-y-auto animate-fadeIn">
+          {/* Admin Portal Banner - ONLY for verified administrators */}
+          {isAdmin && (
+            <div className="pb-3 border-b border-[#EADBCE]">
+              <button
+                onClick={() => handleNavClick('admin')}
+                className="w-full py-2.5 px-3.5 rounded-xl bg-[#1F1C1A] text-white hover:bg-[#B88E3E] text-xs font-bold flex items-center justify-between shadow-sm transition"
+              >
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#E89A97]" />
+                  <span>Admin Panel & Orders</span>
+                </div>
+                <span className="text-[10px] bg-[#C5A059] text-[#191715] px-2 py-0.5 rounded font-bold uppercase">
+                  Manage
+                </span>
+              </button>
+            </div>
+          )}
 
-          <div className="space-y-2 text-sm font-medium uppercase tracking-wider text-[#1F1C1A]">
+          <div className="space-y-1 text-sm font-medium uppercase tracking-wider text-[#1F1C1A]">
             <button
               onClick={() => handleNavClick('home')}
-              className="w-full text-left py-2 border-b border-[#EADBCE]/50 flex justify-between"
+              className="w-full text-left py-2.5 min-h-[42px] border-b border-[#EADBCE]/50 flex justify-between items-center"
             >
               <span>Home</span>
               <ArrowRight className="w-4 h-4 text-[#A89D93]" />
             </button>
             <button
               onClick={() => handleNavClick('shop', 'New Arrivals')}
-              className="w-full text-left py-2 border-b border-[#EADBCE]/50 flex justify-between"
+              className="w-full text-left py-2.5 min-h-[42px] border-b border-[#EADBCE]/50 flex justify-between items-center"
             >
-              <span>New Arrivals</span>
+              <span>1. New Arrivals</span>
               <ArrowRight className="w-4 h-4 text-[#A89D93]" />
             </button>
             <button
               onClick={() => handleNavClick('shop', 'Stitched')}
-              className="w-full text-left py-2 border-b border-[#EADBCE]/50 flex justify-between"
+              className="w-full text-left py-2.5 min-h-[42px] border-b border-[#EADBCE]/50 flex justify-between items-center"
             >
-              <span>Stitched</span>
+              <span>2. Stitched</span>
               <ArrowRight className="w-4 h-4 text-[#A89D93]" />
             </button>
             <button
               onClick={() => handleNavClick('shop', 'Unstitched')}
-              className="w-full text-left py-2 border-b border-[#EADBCE]/50 flex justify-between"
+              className="w-full text-left py-2.5 min-h-[42px] border-b border-[#EADBCE]/50 flex justify-between items-center"
             >
-              <span>Unstitched</span>
+              <span>3. Unstitched</span>
               <ArrowRight className="w-4 h-4 text-[#A89D93]" />
             </button>
 
-            {/* Summer Wear Accordion */}
-            <div className="py-2 border-b border-[#EADBCE]/50">
-              <div
-                className="flex justify-between items-center cursor-pointer"
+            {/* 4. Summer Wear Accordion */}
+            <div className="border-b border-[#EADBCE]/50">
+              <button
+                type="button"
+                className="w-full py-2.5 min-h-[42px] flex justify-between items-center text-left uppercase tracking-wider"
                 onClick={() => setSummerDropdownOpen(!summerDropdownOpen)}
               >
-                <span>Summer Wear</span>
+                <span>4. Summer Wear</span>
                 <ChevronDown className={`w-4 h-4 transition-transform ${summerDropdownOpen ? 'rotate-180' : ''}`} />
-              </div>
+              </button>
               {summerDropdownOpen && (
-                <div className="pl-4 pt-2 space-y-2 text-xs normal-case text-[#5A524C]">
-                  <p onClick={() => handleNavClick('shop', 'Summer Wear', null)} className="py-1 cursor-pointer hover:text-[#B88E3E] font-medium">
+                <div className="pl-4 pb-2.5 space-y-1 text-xs normal-case text-[#5A524C]">
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('shop', 'Summer Wear', null)}
+                    className="w-full text-left py-1.5 hover:text-[#B88E3E] font-medium block"
+                  >
                     All Summer Wear
-                  </p>
-                  <p onClick={() => handleNavClick('shop', 'Summer Wear', '1 Piece')} className="py-1 cursor-pointer hover:text-[#B88E3E]">
-                    1 Piece (Kurti / Shirt)
-                  </p>
-                  <p onClick={() => handleNavClick('shop', 'Summer Wear', '2 Piece')} className="py-1 cursor-pointer hover:text-[#B88E3E]">
-                    2 Piece (Shirt & Trouser)
-                  </p>
-                  <p onClick={() => handleNavClick('shop', 'Summer Wear', '3 Piece')} className="py-1 cursor-pointer hover:text-[#B88E3E]">
-                    3 Piece (Complete Suit)
-                  </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('shop', 'Summer Wear', '1 Piece')}
+                    className="w-full text-left py-1.5 hover:text-[#B88E3E] block"
+                  >
+                    1 Piece
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('shop', 'Summer Wear', '2 Piece')}
+                    className="w-full text-left py-1.5 hover:text-[#B88E3E] block"
+                  >
+                    2 Piece
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('shop', 'Summer Wear', '3 Piece')}
+                    className="w-full text-left py-1.5 hover:text-[#B88E3E] block"
+                  >
+                    3 Piece
+                  </button>
                 </div>
               )}
             </div>
 
-            {/* Winter Wear Accordion */}
-            <div className="py-2 border-b border-[#EADBCE]/50">
-              <div
-                className="flex justify-between items-center cursor-pointer"
+            {/* 5. Winter Wear Accordion */}
+            <div className="border-b border-[#EADBCE]/50">
+              <button
+                type="button"
+                className="w-full py-2.5 min-h-[42px] flex justify-between items-center text-left uppercase tracking-wider"
                 onClick={() => setWinterDropdownOpen(!winterDropdownOpen)}
               >
-                <span>Winter Wear</span>
+                <span>5. Winter Wear</span>
                 <ChevronDown className={`w-4 h-4 transition-transform ${winterDropdownOpen ? 'rotate-180' : ''}`} />
-              </div>
+              </button>
               {winterDropdownOpen && (
-                <div className="pl-4 pt-2 space-y-2 text-xs normal-case text-[#5A524C]">
-                  <p onClick={() => handleNavClick('shop', 'Winter Wear', null)} className="py-1 cursor-pointer hover:text-[#B88E3E] font-medium">
+                <div className="pl-4 pb-2.5 space-y-1 text-xs normal-case text-[#5A524C]">
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('shop', 'Winter Wear', null)}
+                    className="w-full text-left py-1.5 hover:text-[#B88E3E] font-medium block"
+                  >
                     All Winter Wear
-                  </p>
-                  <p onClick={() => handleNavClick('shop', 'Winter Wear', '1 Piece')} className="py-1 cursor-pointer hover:text-[#B88E3E]">
-                    1 Piece (Kurta / Shirt)
-                  </p>
-                  <p onClick={() => handleNavClick('shop', 'Winter Wear', '2 Piece')} className="py-1 cursor-pointer hover:text-[#B88E3E]">
-                    2 Piece (Karandi / Silk Set)
-                  </p>
-                  <p onClick={() => handleNavClick('shop', 'Winter Wear', '3 Piece')} className="py-1 cursor-pointer hover:text-[#B88E3E]">
-                    3 Piece (Suit with Shawl)
-                  </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('shop', 'Winter Wear', '1 Piece')}
+                    className="w-full text-left py-1.5 hover:text-[#B88E3E] block"
+                  >
+                    1 Piece
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('shop', 'Winter Wear', '2 Piece')}
+                    className="w-full text-left py-1.5 hover:text-[#B88E3E] block"
+                  >
+                    2 Piece
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick('shop', 'Winter Wear', '3 Piece')}
+                    className="w-full text-left py-1.5 hover:text-[#B88E3E] block"
+                  >
+                    3 Piece
+                  </button>
                 </div>
               )}
             </div>
 
-            {/* Trousers, Pajamas & Shalwar Accordion */}
-            <div className="py-2 border-b border-[#EADBCE]/50">
-              <div
-                className="flex justify-between items-center cursor-pointer"
-                onClick={() => setTrousersDropdownOpen(!trousersDropdownOpen)}
-              >
-                <span>Trousers & Shalwar</span>
-                <ChevronDown className={`w-4 h-4 transition-transform ${trousersDropdownOpen ? 'rotate-180' : ''}`} />
-              </div>
-              {trousersDropdownOpen && (
-                <div className="pl-4 pt-2 space-y-2 text-xs normal-case text-[#5A524C]">
-                  <p onClick={() => handleNavClick('shop', 'Trousers & Shalwar', null)} className="py-1 cursor-pointer hover:text-[#B88E3E] font-medium">
-                    All Trousers & Shalwars
-                  </p>
-                  <p onClick={() => handleNavClick('shop', 'Trousers & Shalwar', 'Trousers')} className="py-1 cursor-pointer hover:text-[#B88E3E]">
-                    Trousers (Straight & Silk)
-                  </p>
-                  <p onClick={() => handleNavClick('shop', 'Trousers & Shalwar', 'Pajamas')} className="py-1 cursor-pointer hover:text-[#B88E3E]">
-                    Pajamas (Cotton Stretch)
-                  </p>
-                  <p onClick={() => handleNavClick('shop', 'Trousers & Shalwar', 'Shalwar')} className="py-1 cursor-pointer hover:text-[#B88E3E]">
-                    Shalwar (Pleated & Tulip)
-                  </p>
-                  <p onClick={() => handleNavClick('shop', 'Trousers & Shalwar', 'Shalwar Kameez')} className="py-1 cursor-pointer hover:text-[#B88E3E]">
-                    Shalwar Kameez (2PC Suits)
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <button
-              onClick={() => handleNavClick('shop', 'Wedding Wear')}
-              className="w-full text-left py-2 border-b border-[#EADBCE]/50 flex justify-between"
-            >
-              <span>Wedding Wear</span>
-              <ArrowRight className="w-4 h-4 text-[#A89D93]" />
-            </button>
-            <button
-              onClick={() => handleNavClick('shop', 'Formal Wear')}
-              className="w-full text-left py-2 border-b border-[#EADBCE]/50 flex justify-between"
-            >
-              <span>Formal Wear</span>
-              <ArrowRight className="w-4 h-4 text-[#A89D93]" />
-            </button>
+            {/* 6. Casual Wear */}
             <button
               onClick={() => handleNavClick('shop', 'Casual Wear')}
-              className="w-full text-left py-2 border-b border-[#EADBCE]/50 flex justify-between"
+              className="w-full text-left py-2.5 min-h-[42px] border-b border-[#EADBCE]/50 flex justify-between items-center"
             >
-              <span>Casual Wear</span>
+              <span>6. Casual Wear</span>
               <ArrowRight className="w-4 h-4 text-[#A89D93]" />
             </button>
+
+            {/* 7. Formal Wear */}
+            <button
+              onClick={() => handleNavClick('shop', 'Formal Wear')}
+              className="w-full text-left py-2.5 min-h-[42px] border-b border-[#EADBCE]/50 flex justify-between items-center"
+            >
+              <span>7. Formal Wear</span>
+              <ArrowRight className="w-4 h-4 text-[#A89D93]" />
+            </button>
+
+            {/* 8. Wedding Wear */}
+            <button
+              onClick={() => handleNavClick('shop', 'Wedding Wear')}
+              className="w-full text-left py-2.5 min-h-[42px] border-b border-[#EADBCE]/50 flex justify-between items-center"
+            >
+              <span>8. Wedding Wear</span>
+              <ArrowRight className="w-4 h-4 text-[#A89D93]" />
+            </button>
+
+            {/* 9. Bottoms */}
+            <button
+              onClick={() => handleNavClick('shop', 'Bottoms')}
+              className="w-full text-left py-2.5 min-h-[42px] border-b border-[#EADBCE]/50 flex justify-between items-center"
+            >
+              <span>9. Bottoms</span>
+              <ArrowRight className="w-4 h-4 text-[#A89D93]" />
+            </button>
+
+            {/* 10. Sale */}
             <button
               onClick={() => handleNavClick('shop', 'Sale')}
-              className="w-full text-left py-2 border-b border-[#EADBCE]/50 flex justify-between text-red-600 font-bold"
+              className="w-full text-left py-2.5 min-h-[42px] border-b border-[#EADBCE]/50 flex justify-between items-center text-red-600 font-bold"
             >
-              <span>Sale (Up to 40% Off)</span>
+              <span>10. Sale (Up to 40% Off)</span>
               <ArrowRight className="w-4 h-4 text-red-600" />
             </button>
+
             <button
               onClick={() => handleNavClick('contact')}
-              className="w-full text-left py-2 border-b border-[#EADBCE]/50 flex justify-between"
+              className="w-full text-left py-2.5 min-h-[42px] border-b border-[#EADBCE]/50 flex justify-between items-center"
             >
               <span>Contact Us</span>
               <ArrowRight className="w-4 h-4 text-[#A89D93]" />
             </button>
-            <button
-              onClick={() => handleNavClick('admin')}
-              className="w-full text-left py-2 border-b border-[#EADBCE]/50 flex justify-between text-[#B88E3E] font-bold"
-            >
-              <span>Admin Dashboard</span>
-              <ShieldCheck className="w-4 h-4" />
-            </button>
+
+            {/* Mobile Admin Link ONLY for authorized admins */}
+            {isAdmin && (
+              <button
+                onClick={() => handleNavClick('admin')}
+                className="w-full text-left py-2.5 min-h-[42px] border-b border-[#EADBCE]/50 flex justify-between items-center text-[#B88E3E] font-bold"
+              >
+                <span>Admin Dashboard</span>
+                <ShieldCheck className="w-4 h-4" />
+              </button>
+            )}
           </div>
 
           <div className="pt-4 border-t border-[#EADBCE] text-xs text-[#6F665F] space-y-2">

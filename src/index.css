@@ -1,9 +1,19 @@
 @import "tailwindcss";
 
+@theme {
+  --breakpoint-xs: 24rem;
+}
+
 @layer base {
   :root {
     --font-serif: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
     --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   body {
@@ -12,7 +22,6 @@
     color: #1F1C1A;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
   }
 
   h1, h2, h3, .font-serif {

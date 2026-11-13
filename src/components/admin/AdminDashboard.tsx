@@ -26,6 +26,12 @@ import {
   AlertTriangle,
   RefreshCw,
   Mail,
+  ArrowUp,
+  ArrowDown,
+  Users,
+  Check,
+  Tag,
+  Star,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
@@ -93,9 +99,36 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
     updateSettings,
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'inventory' | 'orders' | 'categories' | 'settings'>('overview');
+  type AdminTab =
+    | 'overview'
+    | 'products'
+    | 'upload-pictures'
+    | 'collections'
+    | 'orders'
+    | 'customers'
+    | 'categories'
+    | 'inventory'
+    | 'settings';
+
+  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
+
+  // Dedicated Image Upload & Sequence state
+  const [selectedProductIdForUpload, setSelectedProductIdForUpload] = useState<string>('');
+  const [selectedColorIdxForUpload, setSelectedColorIdxForUpload] = useState<number>(0);
+  const [imageSequenceList, setImageSequenceList] = useState<string[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [isSavingImageSequence, setIsSavingImageSequence] = useState<boolean>(false);
+
+  // Collections state
+  const [collectionsFilter, setCollectionsFilter] = useState<'all' | 'new' | 'featured' | 'sale'>('all');
+  const [collectionsSearch, setCollectionsSearch] = useState<string>('');
+  const [collectionsSuccessMsg, setCollectionsSuccessMsg] = useState<string | null>(null);
+
+  // Customers state
+  const [customerSearch, setCustomerSearch] = useState<string>('');
 
   // Orders search & filter
   const [orderSearchQuery, setOrderSearchQuery] = useState('');
@@ -324,10 +357,97 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
     });
   }, [products, inventoryFilter, inventorySearchQuery]);
 
+  // Dedicated Image Upload sync hooks
+  useEffect(() => {
+    if (!selectedProductIdForUpload && products.length > 0) {
+      setSelectedProductIdForUpload(products[0].id);
+    }
+  }, [products, selectedProductIdForUpload]);
+
+  useEffect(() => {
+    const prod = products.find((p) => p.id === selectedProductIdForUpload);
+    if (prod && prod.colors && prod.colors[selectedColorIdxForUpload]) {
+      setImageSequenceList([...(prod.colors[selectedColorIdxForUpload].images || [])]);
+    } else if (prod && prod.colors && prod.colors[0]) {
+      setImageSequenceList([...(prod.colors[0].images || [])]);
+      setSelectedColorIdxForUpload(0);
+    }
+  }, [selectedProductIdForUpload, selectedColorIdxForUpload, products]);
+
+  // Aggregated customers list hook
+  const customersList = useMemo(() => {
+    const custMap = new Map<string, {
+      id: string;
+      fullName: string;
+      email: string;
+      phone: string;
+      city: string;
+      address: string;
+      orderCount: number;
+      totalSpent: number;
+      latestOrderDate: string;
+      latestStatus: string;
+    }>();
+
+    orders.forEach((o) => {
+      const phoneKey = (o.customer.phone || '').trim();
+      const emailKey = (o.customer.email || '').trim().toLowerCase();
+      const key = phoneKey || emailKey || o.orderNumber;
+      const existing = custMap.get(key);
+      const orderTotal = o.orderStatus !== 'Cancelled' ? o.total : 0;
+      if (existing) {
+        existing.orderCount += 1;
+        existing.totalSpent += orderTotal;
+        if (new Date(o.createdAt) > new Date(existing.latestOrderDate)) {
+          existing.latestOrderDate = o.createdAt;
+          existing.latestStatus = o.orderStatus;
+        }
+      } else {
+        custMap.set(key, {
+          id: key,
+          fullName: o.customer.fullName || 'Valued Client',
+          email: o.customer.email || 'N/A',
+          phone: o.customer.phone || 'N/A',
+          city: o.customer.city || 'Pakistan',
+          address: o.customer.address || 'Standard Delivery Address',
+          orderCount: 1,
+          totalSpent: orderTotal,
+          latestOrderDate: o.createdAt,
+          latestStatus: o.orderStatus,
+        });
+      }
+    });
+
+    const list = Array.from(custMap.values());
+    if (!customerSearch.trim()) return list;
+    const q = customerSearch.toLowerCase();
+    return list.filter(
+      (c) =>
+        c.fullName.toLowerCase().includes(q) ||
+        c.phone.toLowerCase().includes(q) ||
+        c.email.toLowerCase().includes(q) ||
+        c.city.toLowerCase().includes(q)
+    );
+  }, [orders, customerSearch]);
+
+  // Collections filter products hook
+  const filteredCollectionsProducts = useMemo(() => {
+    return products.filter((p) => {
+      if (collectionsFilter === 'new' && !p.isNewArrival) return false;
+      if (collectionsFilter === 'featured' && !p.isFeatured && !p.isBestSeller) return false;
+      if (collectionsFilter === 'sale' && (!p.salePrice || p.salePrice >= p.regularPrice)) return false;
+      if (collectionsSearch.trim()) {
+        const q = collectionsSearch.toLowerCase();
+        return p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
+      }
+      return true;
+    });
+  }, [products, collectionsFilter, collectionsSearch]);
+
   // Auth Guard: executed only after ALL hooks are called unconditionally
   if (!isAdmin) {
     return (
-      <div className="max-w-md mx-auto my-20 p-8 bg-white rounded-2xl border border-red-200 shadow-xl text-center space-y-4">
+      <div className="max-w-md mx-4 sm:mx-auto my-12 sm:my-20 p-6 sm:p-8 bg-white rounded-2xl border border-red-200 shadow-xl text-center space-y-4">
         <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
           <ShieldAlert className="w-8 h-8" />
         </div>
@@ -572,6 +692,134 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
     setShowLibraryModal(false);
   };
 
+  // Dedicated Image Upload Handlers for Tab
+  const handleDedicatedImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUploadError(null);
+    setUploadSuccess(null);
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const maxSizeBytes = 10 * 1024 * 1024; // 10MB limit
+
+    Array.from(files).forEach((file) => {
+      if (!allowedTypes.includes(file.type.toLowerCase()) && !/\.(jpe?g|png|webp)$/i.test(file.name)) {
+        setUploadError(`Invalid file format for "${file.name}". Only JPG, JPEG, PNG, and WebP are supported.`);
+        return;
+      }
+      if (file.size > maxSizeBytes) {
+        setUploadError(`File too large: "${file.name}". Maximum allowed size is 10MB.`);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (loadEvt) => {
+        const base64 = loadEvt.target?.result as string;
+        if (base64) {
+          setImageSequenceList((prev) => [...prev, base64]);
+          setUploadSuccess(`Added "${file.name}". Click "Save Image Sequence" below to publish.`);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    e.target.value = '';
+  };
+
+  const handleMoveImageUp = (index: number) => {
+    if (index === 0) return;
+    setImageSequenceList((prev) => {
+      const copy = [...prev];
+      const temp = copy[index - 1];
+      copy[index - 1] = copy[index];
+      copy[index] = temp;
+      return copy;
+    });
+  };
+
+  const handleMoveImageDown = (index: number) => {
+    if (index >= imageSequenceList.length - 1) return;
+    setImageSequenceList((prev) => {
+      const copy = [...prev];
+      const temp = copy[index + 1];
+      copy[index + 1] = copy[index];
+      copy[index] = temp;
+      return copy;
+    });
+  };
+
+  const handleSetAsPrimaryImage = (index: number) => {
+    if (index === 0) return;
+    setImageSequenceList((prev) => {
+      const copy = [...prev];
+      const selected = copy.splice(index, 1)[0];
+      copy.unshift(selected);
+      return copy;
+    });
+    setUploadSuccess('Selected picture moved to Position #1 (Primary Model Wearing Dress Image). Click "Save Image Sequence" to apply.');
+  };
+
+  const handleDeleteDedicatedImage = (index: number) => {
+    setImageSequenceList((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveDedicatedImageSequence = async () => {
+    if (!selectedProductIdForUpload) return;
+    const prod = products.find((p) => p.id === selectedProductIdForUpload);
+    if (!prod) return;
+
+    setIsSavingImageSequence(true);
+    setUploadError(null);
+    setUploadSuccess(null);
+
+    try {
+      const updatedColors = [...prod.colors];
+      if (updatedColors[selectedColorIdxForUpload]) {
+        updatedColors[selectedColorIdxForUpload] = {
+          ...updatedColors[selectedColorIdxForUpload],
+          images: imageSequenceList,
+        };
+      }
+
+      await updateProduct(prod.id, {
+        colors: updatedColors,
+        updatedAt: new Date().toISOString(),
+      });
+
+      setUploadSuccess(`Successfully saved ${imageSequenceList.length} pictures for ${prod.name}! Position #1 is now set as the primary model photo across all cards and detail view.`);
+    } catch (err: any) {
+      setUploadError(`Failed to save image sequence: ${err?.message || 'Database error'}`);
+    } finally {
+      setIsSavingImageSequence(false);
+    }
+  };
+
+  const handleToggleCollectionField = async (productId: string, field: 'isNewArrival' | 'isFeatured' | 'isBestSeller', currentVal: boolean | undefined) => {
+    try {
+      await updateProduct(productId, {
+        [field]: !currentVal,
+        updatedAt: new Date().toISOString(),
+      });
+      setCollectionsSuccessMsg(`Updated ${field} for product.`);
+      setTimeout(() => setCollectionsSuccessMsg(null), 3000);
+    } catch (err: any) {
+      alert(`Could not update: ${err?.message || 'Error'}`);
+    }
+  };
+
+  const handleUpdateSalePrice = async (productId: string, salePrice: number | undefined) => {
+    try {
+      await updateProduct(productId, {
+        salePrice: salePrice && salePrice > 0 ? salePrice : undefined,
+        updatedAt: new Date().toISOString(),
+      });
+      setCollectionsSuccessMsg('Updated sale price.');
+      setTimeout(() => setCollectionsSuccessMsg(null), 3000);
+    } catch (err: any) {
+      alert(`Could not update sale price: ${err?.message || 'Error'}`);
+    }
+  };
+
   // Open Product Modal (New or Edit)
   const openProductModal = (prod?: Product) => {
     if (prod) {
@@ -692,29 +940,29 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
   return (
     <div className="min-h-screen bg-[#F7F4EE] pb-20">
       {/* Top Admin Navigation Header */}
-      <div className="bg-[#191715] text-white border-b border-[#2D2825] px-4 sm:px-8 py-4">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+      <div className="bg-[#191715] text-white border-b border-[#2D2825] px-3 sm:px-8 py-3.5 sm:py-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <img
               src="/assets/aistudio/logo_8d8d5177.jpeg"
               alt="NOOR STUDIO"
-              className="h-9 w-auto object-contain rounded border border-[#3E3834] bg-black shadow-sm"
+              className="h-8 sm:h-9 w-auto object-contain rounded border border-[#3E3834] bg-black shadow-sm shrink-0"
             />
-            <span className="font-serif text-xl tracking-[0.2em] font-bold uppercase text-[#FAF8F5]">
+            <span className="font-serif text-base sm:text-xl tracking-[0.12em] sm:tracking-[0.2em] font-bold uppercase text-[#FAF8F5] whitespace-nowrap">
               NOOR STUDIO
             </span>
-            <span className="px-2 py-0.5 rounded bg-[#C5A059] text-[#191715] text-[10px] font-bold uppercase tracking-wider">
+            <span className="px-2 py-0.5 rounded bg-[#C5A059] text-[#191715] text-[10px] font-bold uppercase tracking-wider shrink-0">
               Admin Portal
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 self-start sm:self-auto">
             <span className="text-xs text-[#A89D93] hidden md:inline">
               Logged in: <strong className="text-white">{user?.email}</strong>
             </span>
             <button
               onClick={onExit}
-              className="px-4 py-1.5 rounded-lg bg-[#2D2825] hover:bg-[#C5A059] hover:text-[#191715] text-xs font-semibold transition"
+              className="px-3.5 sm:px-4 py-1.5 rounded-lg bg-[#2D2825] hover:bg-[#C5A059] hover:text-[#191715] text-xs font-semibold transition whitespace-nowrap"
             >
               Back to Storefront
             </button>
@@ -722,7 +970,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
         </div>
 
         {/* Dashboard Navigation Tabs */}
-        <div className="max-w-7xl mx-auto flex items-center gap-2 sm:gap-6 mt-4 pt-3 border-t border-[#2D2825] overflow-x-auto text-xs font-medium uppercase tracking-wider">
+        <div className="max-w-7xl mx-auto flex items-center gap-2 sm:gap-4 mt-4 pt-3 border-t border-[#2D2825] overflow-x-auto text-xs font-medium uppercase tracking-wider">
           <button
             onClick={() => setActiveTab('overview')}
             className={`py-2 px-3 rounded-lg transition whitespace-nowrap ${
@@ -730,6 +978,32 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
             }`}
           >
             Overview
+          </button>
+          <button
+            onClick={() => setActiveTab('products')}
+            className={`py-2 px-3 rounded-lg transition whitespace-nowrap ${
+              activeTab === 'products' ? 'bg-[#C5A059] text-[#191715] font-bold' : 'text-[#D8CCC4] hover:text-white'
+            }`}
+          >
+            Products ({products.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('upload-pictures')}
+            className={`py-2 px-3 rounded-lg transition whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'upload-pictures' ? 'bg-[#C5A059] text-[#191715] font-bold' : 'text-[#D8CCC4] hover:text-white'
+            }`}
+          >
+            <Upload className="w-3.5 h-3.5" />
+            <span>Upload Pictures</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('collections')}
+            className={`py-2 px-3 rounded-lg transition whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'collections' ? 'bg-[#C5A059] text-[#191715] font-bold' : 'text-[#D8CCC4] hover:text-white'
+            }`}
+          >
+            <Tag className="w-3.5 h-3.5" />
+            <span>Collections</span>
           </button>
           <button
             onClick={() => setActiveTab('orders')}
@@ -745,20 +1019,13 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
             )}
           </button>
           <button
-            onClick={() => setActiveTab('products')}
-            className={`py-2 px-3 rounded-lg transition whitespace-nowrap ${
-              activeTab === 'products' ? 'bg-[#C5A059] text-[#191715] font-bold' : 'text-[#D8CCC4] hover:text-white'
+            onClick={() => setActiveTab('customers')}
+            className={`py-2 px-3 rounded-lg transition whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'customers' ? 'bg-[#C5A059] text-[#191715] font-bold' : 'text-[#D8CCC4] hover:text-white'
             }`}
           >
-            Products ({products.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('inventory')}
-            className={`py-2 px-3 rounded-lg transition whitespace-nowrap ${
-              activeTab === 'inventory' ? 'bg-[#C5A059] text-[#191715] font-bold' : 'text-[#D8CCC4] hover:text-white'
-            }`}
-          >
-            Inventory Matrix
+            <Users className="w-3.5 h-3.5" />
+            <span>Customers ({customersList.length})</span>
           </button>
           <button
             onClick={() => setActiveTab('categories')}
@@ -767,6 +1034,14 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
             }`}
           >
             Categories
+          </button>
+          <button
+            onClick={() => setActiveTab('inventory')}
+            className={`py-2 px-3 rounded-lg transition whitespace-nowrap ${
+              activeTab === 'inventory' ? 'bg-[#C5A059] text-[#191715] font-bold' : 'text-[#D8CCC4] hover:text-white'
+            }`}
+          >
+            Inventory Matrix
           </button>
           <button
             onClick={() => setActiveTab('settings')}
@@ -779,23 +1054,23 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-8 py-6 sm:py-8">
         {/* ================= OVERVIEW TAB ================= */}
         {activeTab === 'overview' && (
-          <div className="space-y-8 animate-fadeIn">
+          <div className="space-y-6 sm:space-y-8 animate-fadeIn">
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-              <div className="p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-sm">
+            <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
+              <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-sm">
                 <span className="text-xs uppercase tracking-wider font-semibold text-[#8C827A]">Total Revenue</span>
-                <p className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A] mt-1 text-[#B88E3E]">
+                <p className="font-serif text-xl sm:text-2xl lg:text-3xl font-bold mt-1 text-[#B88E3E] break-words">
                   Rs. {totalSales.toLocaleString()}
                 </p>
                 <p className="text-[11px] text-[#A89D93] mt-1">Cash on Delivery & Raast</p>
               </div>
 
-              <div className="p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-sm">
+              <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-sm">
                 <span className="text-xs uppercase tracking-wider font-semibold text-[#8C827A]">Total Orders</span>
-                <p className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A] mt-1">
+                <p className="font-serif text-xl sm:text-2xl lg:text-3xl font-bold text-[#1F1C1A] mt-1">
                   {orders.length}
                 </p>
                 <p className="text-[11px] text-amber-600 font-semibold mt-1">
@@ -803,17 +1078,17 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
                 </p>
               </div>
 
-              <div className="p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-sm">
+              <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-sm">
                 <span className="text-xs uppercase tracking-wider font-semibold text-[#8C827A]">Active Catalog</span>
-                <p className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A] mt-1">
+                <p className="font-serif text-xl sm:text-2xl lg:text-3xl font-bold text-[#1F1C1A] mt-1">
                   {products.filter((p) => p.isActive).length}
                 </p>
                 <p className="text-[11px] text-[#A89D93] mt-1">Across {categories.length} categories</p>
               </div>
 
-              <div className="p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-sm">
+              <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-sm">
                 <span className="text-xs uppercase tracking-wider font-semibold text-[#8C827A]">Delivered Orders</span>
-                <p className="font-serif text-2xl sm:text-3xl font-bold text-emerald-700 mt-1">
+                <p className="font-serif text-xl sm:text-2xl lg:text-3xl font-bold text-emerald-700 mt-1">
                   {deliveredOrders.length}
                 </p>
                 <p className="text-[11px] text-emerald-600 mt-1">Successfully completed</p>
@@ -821,10 +1096,10 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
             </div>
 
             {/* Quick Actions & Recent Orders */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
               {/* Recent Orders List (2 Cols) */}
-              <div className="lg:col-span-2 bg-white rounded-2xl border border-[#EADBCE] p-6 shadow-sm">
-                <div className="flex items-center justify-between border-b border-[#EADBCE] pb-3 mb-4">
+              <div className="lg:col-span-2 bg-white rounded-2xl border border-[#EADBCE] p-4 sm:p-6 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#EADBCE] pb-3 mb-4">
                   <h3 className="font-serif text-lg font-bold text-[#1F1C1A]">Recent Customer Orders</h3>
                   <button
                     onClick={() => setActiveTab('orders')}
@@ -872,7 +1147,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
                           </p>
                         </div>
 
-                        <div className="text-right">
+                        <div className="text-left sm:text-right shrink-0">
                           <p className="text-sm font-bold text-[#1F1C1A]">
                             Rs. {ord.total.toLocaleString()}
                           </p>
@@ -887,7 +1162,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
               </div>
 
               {/* Store Health & Contact Snapshot (1 Col) */}
-              <div className="bg-white rounded-2xl border border-[#EADBCE] p-6 shadow-sm space-y-4">
+              <div className="bg-white rounded-2xl border border-[#EADBCE] p-4 sm:p-6 shadow-sm space-y-4">
                 <h3 className="font-serif text-lg font-bold text-[#1F1C1A] border-b border-[#EADBCE] pb-3">
                   Store Operations
                 </h3>
@@ -936,21 +1211,21 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
                   Manage luxury Pakistani fashion ensembles, color variations, galleries, and sizes.
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={handleSyncCatalogToDb}
                   disabled={isSyncingCatalog}
-                  className="py-2.5 px-4 rounded-xl bg-[#FAF8F5] border border-[#C5A059] text-[#191715] hover:bg-[#C5A059] text-xs font-semibold uppercase tracking-wider flex items-center gap-2 transition disabled:opacity-50"
+                  className="w-full xs:w-auto justify-center py-2.5 px-4 rounded-xl bg-[#FAF8F5] border border-[#C5A059] text-[#191715] hover:bg-[#C5A059] text-xs font-semibold uppercase tracking-wider flex items-center gap-2 transition disabled:opacity-50"
                   title="Push all Summer & Winter collection items to Cloud Firestore"
                 >
-                  <Sparkles className="w-4 h-4 text-[#C5A059]" />
+                  <Sparkles className="w-4 h-4 text-[#C5A059] shrink-0" />
                   <span>{isSyncingCatalog ? 'Syncing...' : 'Sync 50+ Ensembles to Cloud'}</span>
                 </button>
                 <button
                   onClick={() => openProductModal()}
-                  className="py-2.5 px-4 rounded-xl bg-[#1F1C1A] hover:bg-[#B88E3E] text-white text-xs font-semibold uppercase tracking-wider flex items-center gap-2 transition"
+                  className="w-full xs:w-auto justify-center py-2.5 px-4 rounded-xl bg-[#1F1C1A] hover:bg-[#B88E3E] text-white text-xs font-semibold uppercase tracking-wider flex items-center gap-2 transition"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-4 h-4 shrink-0" />
                   <span>Add Product</span>
                 </button>
               </div>
@@ -966,7 +1241,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
             {/* Products Table */}
             <div className="bg-white rounded-2xl border border-[#EADBCE] overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
-                <table className="w-full text-xs text-left text-[#4A423D]">
+                <table className="w-full min-w-[680px] text-xs text-left text-[#4A423D]">
                   <thead className="bg-[#FAF8F5] text-[#1F1C1A] uppercase tracking-wider font-semibold border-b border-[#EADBCE]">
                     <tr>
                       <th className="py-3 px-4">Product</th>
@@ -1043,7 +1318,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
                               {p.isActive ? 'Active' : 'Inactive'}
                             </span>
                           </td>
-                          <td className="py-3 px-4 text-right space-x-2">
+                          <td className="py-3 px-4 text-right space-x-2 whitespace-nowrap">
                             <button
                               onClick={() => openProductModal(p)}
                               className="p-1.5 rounded bg-gray-100 hover:bg-[#B88E3E] hover:text-white transition"
@@ -1095,7 +1370,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
             </div>
 
             {/* Inventory KPI Summary Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div className="p-4 rounded-xl bg-white border border-[#EADBCE] shadow-sm">
                 <p className="text-[11px] font-semibold text-[#8C827A] uppercase">Total Units in Stock</p>
                 <p className="text-2xl font-bold text-[#1F1C1A] mt-1 font-mono">{inventoryStats.totalItems}</p>
@@ -1209,7 +1484,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
                   return (
                     <div
                       key={prod.id}
-                      className={`p-5 rounded-2xl bg-white border shadow-sm transition ${
+                      className={`p-3.5 sm:p-5 rounded-2xl bg-white border shadow-sm transition ${
                         isSoldOut
                           ? 'border-red-300 ring-1 ring-red-200 bg-red-50/15'
                           : isLowStock
@@ -1218,21 +1493,21 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
                       }`}
                     >
                       {/* Product Header Row */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#EADBCE] pb-3">
-                        <div className="flex items-center gap-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-[#EADBCE] pb-3">
+                        <div className="flex items-center gap-3 min-w-0">
                           <img
                             src={prod.colors[0]?.images[0] || '/assets/aistudio/weddingseason__3__6ca9845d.jpeg'}
                             alt={prod.name}
-                            className="w-14 h-16 object-cover object-top rounded-lg border border-[#EADBCE] shadow-sm"
+                            className="w-14 h-16 object-cover object-top rounded-lg border border-[#EADBCE] shadow-sm shrink-0"
                           />
-                          <div>
+                          <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               {prod.brand && (
                                 <span className="px-1.5 py-0.5 rounded bg-[#FAF5EE] text-[#B88E3E] font-bold text-[10px] tracking-wider uppercase border border-[#EADBCE]">
                                   {prod.brand}
                                 </span>
                               )}
-                              <h4 className="font-serif font-bold text-sm text-[#1F1C1A]">{prod.name}</h4>
+                              <h4 className="font-serif font-bold text-sm text-[#1F1C1A] truncate">{prod.name}</h4>
                             </div>
                             <p className="text-[11px] text-[#7A7169] mt-0.5">
                               {prod.category} • {prod.fabric} • <span className="font-mono font-bold">SKU: {prod.sku}</span>
@@ -1241,7 +1516,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
                         </div>
 
                         {/* Status Badge & 1-Click Actions */}
-                        <div className="flex items-center gap-3 self-end sm:self-center">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 self-start sm:self-center">
                           {isSoldOut ? (
                             <span className="px-3 py-1 rounded-full bg-red-600 text-white text-xs font-bold uppercase tracking-wider shadow-sm flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
@@ -1257,7 +1532,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
                             </span>
                           )}
 
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex flex-wrap items-center gap-1.5">
                             <button
                               onClick={() => handleMarkProductSoldOut(prod)}
                               className="px-2.5 py-1.5 rounded-lg bg-red-100 hover:bg-red-600 hover:text-white text-red-800 text-[11px] font-semibold border border-red-200 transition"
@@ -1277,23 +1552,23 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
                       </div>
 
                       {/* Sizes and Variants Matrix */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 pt-3">
                         {prod.colors.map((color, colIdx) => (
-                          <div key={color.name} className="p-3.5 rounded-xl bg-[#FAF8F5] border border-[#EADBCE] space-y-2.5">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
+                          <div key={color.name} className="p-3 sm:p-3.5 rounded-xl bg-[#FAF8F5] border border-[#EADBCE] space-y-2.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
                                 <span
-                                  className="w-4 h-4 rounded-full border border-black/20 shadow-inner"
+                                  className="w-4 h-4 rounded-full border border-black/20 shadow-inner shrink-0"
                                   style={{ backgroundColor: color.hex }}
                                 />
-                                <span className="font-bold text-xs text-[#1F1C1A]">{color.name}</span>
+                                <span className="font-bold text-xs text-[#1F1C1A] truncate">{color.name}</span>
                               </div>
-                              <span className="text-[10px] font-mono text-[#8C827A]">
+                              <span className="text-[10px] font-mono text-[#8C827A] shrink-0">
                                 {color.sizes.reduce((sum, s) => sum + (s.stock || 0), 0)} units
                               </span>
                             </div>
 
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                            <div className="grid grid-cols-2 xs:grid-cols-3 gap-2 text-xs">
                               {color.sizes.map((s, szIdx) => {
                                 const sizeSoldOut = (s.stock || 0) === 0;
                                 const sizeLow = !sizeSoldOut && (s.stock || 0) <= 3;
@@ -1412,7 +1687,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
             {/* Orders Table */}
             <div className="bg-white rounded-2xl border border-[#EADBCE] overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
-                <table className="w-full text-xs text-left text-[#4A423D]">
+                <table className="w-full min-w-[760px] text-xs text-left text-[#4A423D]">
                   <thead className="bg-[#FAF8F5] text-[#1F1C1A] uppercase tracking-wider font-semibold border-b border-[#EADBCE]">
                     <tr>
                       <th className="py-3 px-4">Order #</th>
@@ -1561,7 +1836,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
 
         {/* ================= SETTINGS TAB ================= */}
         {activeTab === 'settings' && (
-          <div className="max-w-2xl bg-white rounded-2xl border border-[#EADBCE] p-6 sm:p-8 shadow-sm space-y-6 animate-fadeIn">
+          <div className="max-w-2xl bg-white rounded-2xl border border-[#EADBCE] p-4 sm:p-8 shadow-sm space-y-6 animate-fadeIn">
             <div className="border-b border-[#EADBCE] pb-3">
               <h2 className="font-serif text-2xl font-bold text-[#1F1C1A]">Store Settings & Contact</h2>
               <p className="text-xs text-[#7A7169] mt-0.5">
@@ -1692,15 +1967,569 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
             </form>
           </div>
         )}
+
+        {/* ================= DEDICATED PRODUCT IMAGE UPLOAD & SEQUENCE TAB ================= */}
+        {activeTab === 'upload-pictures' && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#EADBCE] pb-4">
+              <div>
+                <h2 className="font-serif text-2xl font-bold text-[#1F1C1A]">Product Image Upload & Sequence Manager</h2>
+                <p className="text-xs text-[#7A7169] mt-1">
+                  Upload multiple high-resolution photos and manage the exact sequence. Model wearing the dress must always be picture #1.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleSaveDedicatedImageSequence}
+                  disabled={isSavingImageSequence}
+                  className="py-2.5 px-5 rounded-xl bg-[#1F1C1A] hover:bg-[#B88E3E] text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition shadow-md disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4 text-[#C5A059]" />
+                  <span>{isSavingImageSequence ? 'Saving...' : 'Save Image Sequence'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* MANDATORY 5-STEP IMAGE SEQUENCE INSTRUCTION BOX */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#FAF8F5] via-[#FFFDFB] to-[#FAF8F5] border border-[#C5A059]/40 shadow-xs space-y-2.5">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#B88E3E]">
+                <Sparkles className="w-4 h-4 text-[#B88E3E]" />
+                <span>Mandatory NOOR STUDIO Fashion Image Sequence (Client Rule #6):</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 text-[11px] text-[#4A423D]">
+                <div className="p-2.5 rounded-xl bg-white border border-[#C5A059] font-bold text-[#1F1C1A] shadow-xs">
+                  <span className="text-[#C5A059] block text-xs">1. FIRST IMAGE</span>
+                  Model wearing the dress (Main card & cover)
+                </div>
+                <div className="p-2.5 rounded-xl bg-white border border-[#EADBCE]">
+                  <span className="font-bold text-[#7A7169] block text-xs">2. Front View</span>
+                  Dress full front silhouette
+                </div>
+                <div className="p-2.5 rounded-xl bg-white border border-[#EADBCE]">
+                  <span className="font-bold text-[#7A7169] block text-xs">3. Back View</span>
+                  Dress back & dupatta styling
+                </div>
+                <div className="p-2.5 rounded-xl bg-white border border-[#EADBCE]">
+                  <span className="font-bold text-[#7A7169] block text-xs">4. Fabric Macro</span>
+                  Embroidery & texture close-up
+                </div>
+                <div className="p-2.5 rounded-xl bg-white border border-[#EADBCE]">
+                  <span className="font-bold text-[#7A7169] block text-xs">5. Details</span>
+                  Laces, tassels & stitching details
+                </div>
+              </div>
+            </div>
+
+            {/* Feedback notifications */}
+            {uploadError && (
+              <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-center gap-2 animate-fadeIn">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{uploadError}</span>
+              </div>
+            )}
+            {uploadSuccess && (
+              <div className="p-3.5 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-xl text-xs flex items-center gap-2 animate-fadeIn">
+                <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{uploadSuccess}</span>
+              </div>
+            )}
+
+            {/* Product & Variation Selector */}
+            <div className="p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-sm space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#1F1C1A] uppercase tracking-wider mb-1.5">
+                    Select Product to Manage Pictures
+                  </label>
+                  <select
+                    value={selectedProductIdForUpload}
+                    onChange={(e) => {
+                      setSelectedProductIdForUpload(e.target.value);
+                      setSelectedColorIdxForUpload(0);
+                      setUploadError(null);
+                      setUploadSuccess(null);
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#D9CCC2] bg-white text-xs font-semibold text-[#1F1C1A] focus:outline-none focus:border-[#B88E3E]"
+                  >
+                    {products.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} (SKU: {p.sku}) — {p.category}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Color Variation Pills (if product has multiple) */}
+                {(() => {
+                  const currentProd = products.find((p) => p.id === selectedProductIdForUpload);
+                  if (!currentProd || !currentProd.colors || currentProd.colors.length <= 1) return null;
+                  return (
+                    <div>
+                      <label className="block text-xs font-bold text-[#1F1C1A] uppercase tracking-wider mb-1.5">
+                        Select Color Variation
+                      </label>
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        {currentProd.colors.map((c, idx) => (
+                          <button
+                            key={c.name}
+                            type="button"
+                            onClick={() => {
+                              setSelectedColorIdxForUpload(idx);
+                              setUploadError(null);
+                              setUploadSuccess(null);
+                            }}
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold border flex items-center gap-1.5 transition ${
+                              selectedColorIdxForUpload === idx
+                                ? 'bg-[#1F1C1A] text-white border-[#1F1C1A] shadow-xs'
+                                : 'bg-[#FAF8F5] text-[#5A524C] border-[#D9CCC2] hover:border-[#1F1C1A]'
+                            }`}
+                          >
+                            <span
+                              className="w-3 h-3 rounded-full border border-black/20"
+                              style={{ backgroundColor: c.hex }}
+                            />
+                            <span>{c.name} ({c.images?.length || 0} pics)</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Upload Controls */}
+              <div className="border-t border-[#F2ECE6] pt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#C5A059] hover:bg-[#B88E3E] text-[#191715] hover:text-white text-xs font-bold uppercase tracking-wider transition shadow-sm">
+                    <Upload className="w-4 h-4" />
+                    <span>Upload Pictures from Device</span>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                      className="hidden"
+                      onChange={handleDedicatedImageUpload}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveColorIndexForLibrary(selectedColorIdxForUpload);
+                      setShowLibraryModal(true);
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#C5A059] bg-[#FAF8F5] text-[#191715] hover:bg-[#C5A059] text-xs font-bold uppercase tracking-wider transition"
+                  >
+                    <ImageIcon className="w-4 h-4 text-[#B88E3E]" />
+                    <span>Pick from NOOR Photos</span>
+                  </button>
+                </div>
+                <span className="text-[11px] text-[#7A7169]">
+                  Supported: <strong>JPG, JPEG, PNG, WebP</strong> (Max 10MB each)
+                </span>
+              </div>
+            </div>
+
+            {/* Picture Sequence Cards Grid */}
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <h3 className="font-serif text-sm font-bold text-[#1F1C1A] uppercase tracking-wider">
+                  Current Picture Sequence ({imageSequenceList.length} Photos)
+                </h3>
+                <span className="text-xs text-[#7A7169]">
+                  Use <strong>Move Up / Down</strong> or <strong>Set as Primary</strong> to adjust sequence
+                </span>
+              </div>
+
+              {imageSequenceList.length === 0 ? (
+                <div className="p-8 sm:p-12 text-center bg-white rounded-2xl border-2 border-dashed border-[#D9CCC2] space-y-3">
+                  <ImageIcon className="w-10 h-10 text-[#C5A059] mx-auto opacity-60" />
+                  <p className="text-sm font-semibold text-[#1F1C1A]">No Pictures in this Product Gallery</p>
+                  <p className="text-xs text-[#7A7169] max-w-sm mx-auto">
+                    Click <strong>Upload Pictures from Device</strong> above to add JPG, JPEG, PNG, or WebP photos.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+                  {imageSequenceList.map((imgUrl, idx) => {
+                    const isPrimary = idx === 0;
+                    return (
+                      <div
+                        key={idx}
+                        className={`relative rounded-2xl overflow-hidden bg-white border-2 shadow-sm flex flex-col transition duration-200 ${
+                          isPrimary
+                            ? 'border-[#C5A059] ring-2 ring-[#C5A059]/30'
+                            : 'border-[#EADBCE] hover:border-[#B88E3E]'
+                        }`}
+                      >
+                        {/* Sequence Badge */}
+                        <div className="absolute top-2 left-2 z-10">
+                          {isPrimary ? (
+                            <span className="px-2 py-0.5 rounded-md bg-[#1F1C1A] text-[#C5A059] text-[10px] font-bold uppercase tracking-wider shadow-md flex items-center gap-1 border border-[#C5A059]">
+                              <Star className="w-3 h-3 fill-[#C5A059]" />
+                              <span>#1 Model (Primary)</span>
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-md bg-black/70 text-white text-[10px] font-bold shadow-md">
+                              #{idx + 1} {idx === 1 ? 'Front' : idx === 2 ? 'Back' : idx === 3 ? 'Fabric' : 'Detail'}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Image Preview */}
+                        <div className="relative aspect-[3/4] w-full bg-[#FAF8F5] overflow-hidden">
+                          <img
+                            src={imgUrl}
+                            alt={`Product pic ${idx + 1}`}
+                            className="w-full h-full object-cover object-top"
+                          />
+                        </div>
+
+                        {/* Sequence Actions */}
+                        <div className="p-2.5 bg-[#FAF8F5] border-t border-[#EADBCE] flex items-center justify-between gap-1 text-xs">
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveImageUp(idx)}
+                              disabled={idx === 0}
+                              className="p-1.5 rounded-lg bg-white border border-[#D9CCC2] text-[#1F1C1A] hover:bg-[#B88E3E] hover:text-white transition disabled:opacity-30"
+                              title="Move Earlier in Sequence"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveImageDown(idx)}
+                              disabled={idx === imageSequenceList.length - 1}
+                              className="p-1.5 rounded-lg bg-white border border-[#D9CCC2] text-[#1F1C1A] hover:bg-[#B88E3E] hover:text-white transition disabled:opacity-30"
+                              title="Move Later in Sequence"
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          {!isPrimary && (
+                            <button
+                              type="button"
+                              onClick={() => handleSetAsPrimaryImage(idx)}
+                              className="px-2 py-1 rounded-md bg-[#C5A059] hover:bg-[#B88E3E] text-[#191715] hover:text-white text-[10px] font-bold uppercase transition"
+                              title="Set as First / Primary Image"
+                            >
+                              Make #1
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteDedicatedImage(idx)}
+                            className="p-1.5 rounded-lg bg-white border border-red-200 text-red-600 hover:bg-red-600 hover:text-white transition"
+                            title="Delete Picture"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Save Button Footer */}
+            {imageSequenceList.length > 0 && (
+              <div className="p-4 rounded-2xl bg-white border border-[#EADBCE] flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+                <p className="text-xs text-[#5A524C]">
+                  Ensure position #1 is the <strong>model wearing the dress</strong> before saving.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleSaveDedicatedImageSequence}
+                  disabled={isSavingImageSequence}
+                  className="w-full sm:w-auto py-2.5 px-6 rounded-xl bg-[#1F1C1A] hover:bg-[#B88E3E] text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition shadow-md disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4 text-[#C5A059]" />
+                  <span>{isSavingImageSequence ? 'Saving...' : 'Save Image Sequence to Product'}</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ================= MANAGE COLLECTIONS TAB (NEW ARRIVALS, FEATURED, SALE) ================= */}
+        {activeTab === 'collections' && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#EADBCE] pb-4">
+              <div>
+                <h2 className="font-serif text-2xl font-bold text-[#1F1C1A]">Collections & Visibility Management</h2>
+                <p className="text-xs text-[#7A7169] mt-1">
+                  Manage New Arrivals showcase, Featured collections, Bestsellers, and Sale markdowns.
+                </p>
+              </div>
+            </div>
+
+            {collectionsSuccessMsg && (
+              <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-xs text-emerald-800 flex items-center gap-2 animate-fadeIn">
+                <Check className="w-4 h-4 text-emerald-600" />
+                <span>{collectionsSuccessMsg}</span>
+              </div>
+            )}
+
+            {/* Filter Tabs & Search */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {[
+                  { id: 'all', label: `All Products (${products.length})` },
+                  { id: 'new', label: `New Arrivals (${products.filter((p) => p.isNewArrival).length})` },
+                  { id: 'featured', label: `Featured (${products.filter((p) => p.isFeatured || p.isBestSeller).length})` },
+                  { id: 'sale', label: `On Sale (${products.filter((p) => p.salePrice && p.salePrice < p.regularPrice).length})` },
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setCollectionsFilter(f.id as any)}
+                    className={`py-2 px-3.5 rounded-xl text-xs font-semibold transition ${
+                      collectionsFilter === f.id
+                        ? 'bg-[#1F1C1A] text-white shadow-sm'
+                        : 'bg-white border border-[#D9CCC2] text-[#5A524C] hover:border-[#1F1C1A]'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="relative max-w-xs w-full">
+                <Search className="w-4 h-4 absolute left-3 top-3 text-[#7A7169]" />
+                <input
+                  type="text"
+                  value={collectionsSearch}
+                  onChange={(e) => setCollectionsSearch(e.target.value)}
+                  placeholder="Search ensemble or SKU..."
+                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#D9CCC2] bg-white text-xs focus:outline-none focus:border-[#B88E3E]"
+                />
+              </div>
+            </div>
+
+            {/* Collections Table */}
+            <div className="bg-white rounded-2xl border border-[#EADBCE] overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[720px] text-xs text-left text-[#4A423D]">
+                  <thead className="bg-[#FAF8F5] text-[#1F1C1A] uppercase tracking-wider font-semibold border-b border-[#EADBCE]">
+                    <tr>
+                      <th className="py-3 px-4">Product</th>
+                      <th className="py-3 px-4">Category</th>
+                      <th className="py-3 px-4 text-center">New Arrival</th>
+                      <th className="py-3 px-4 text-center">Featured</th>
+                      <th className="py-3 px-4 text-center">Best Seller</th>
+                      <th className="py-3 px-4">Regular Price</th>
+                      <th className="py-3 px-4">Sale Price (PKR)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#EADBCE]">
+                    {filteredCollectionsProducts.map((p) => {
+                      const discount = p.salePrice && p.salePrice < p.regularPrice
+                        ? Math.round(((p.regularPrice - p.salePrice) / p.regularPrice) * 100)
+                        : null;
+                      return (
+                        <tr key={p.id} className="hover:bg-[#FAF8F5]/80 transition">
+                          <td className="py-3 px-4 flex items-center gap-3">
+                            <img
+                              src={p.colors[0]?.images[0] || '/assets/aistudio/weddingseason__3__6ca9845d.jpeg'}
+                              alt={p.name}
+                              className="w-10 h-12 object-cover object-top rounded-lg border border-[#EADBCE] shrink-0"
+                            />
+                            <div>
+                              <p className="font-semibold text-xs text-[#1F1C1A] line-clamp-1">{p.name}</p>
+                              <p className="text-[10px] text-[#8C827A] font-mono">SKU: {p.sku}</p>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 font-medium text-[#1F1C1A]">
+                            {p.category}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleCollectionField(p.id, 'isNewArrival', p.isNewArrival)}
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition ${
+                                p.isNewArrival
+                                  ? 'bg-black text-white'
+                                  : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                              }`}
+                            >
+                              {p.isNewArrival ? '✓ NEW' : '+ Add'}
+                            </button>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleCollectionField(p.id, 'isFeatured', p.isFeatured)}
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition ${
+                                p.isFeatured
+                                  ? 'bg-[#C5A059] text-[#191715]'
+                                  : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                              }`}
+                            >
+                              {p.isFeatured ? '✓ FEATURED' : '+ Add'}
+                            </button>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleCollectionField(p.id, 'isBestSeller', p.isBestSeller)}
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition ${
+                                p.isBestSeller
+                                  ? 'bg-[#B88E3E] text-white'
+                                  : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                              }`}
+                            >
+                              {p.isBestSeller ? '✓ BESTSELLER' : '+ Add'}
+                            </button>
+                          </td>
+                          <td className="py-3 px-4 font-semibold text-[#1F1C1A]">
+                            Rs. {p.regularPrice.toLocaleString()}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                defaultValue={p.salePrice || ''}
+                                placeholder="Sale PKR"
+                                onBlur={(e) => {
+                                  const val = e.target.value ? Number(e.target.value) : undefined;
+                                  if (val !== p.salePrice) {
+                                    handleUpdateSalePrice(p.id, val);
+                                  }
+                                }}
+                                className="w-24 px-2 py-1 rounded border border-[#D9CCC2] text-xs font-semibold focus:outline-none focus:border-[#B88E3E]"
+                              />
+                              {discount && (
+                                <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
+                                  -{discount}%
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= CUSTOMERS DIRECTORY TAB ================= */}
+        {activeTab === 'customers' && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#EADBCE] pb-4">
+              <div>
+                <h2 className="font-serif text-2xl font-bold text-[#1F1C1A]">Customer Directory & Order History</h2>
+                <p className="text-xs text-[#7A7169] mt-1">
+                  View patron profiles, total spend, delivery locations, and send instant WhatsApp updates.
+                </p>
+              </div>
+              <div className="relative max-w-xs w-full">
+                <Search className="w-4 h-4 absolute left-3 top-3 text-[#7A7169]" />
+                <input
+                  type="text"
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  placeholder="Search customer name, phone, city..."
+                  className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#D9CCC2] bg-white text-xs focus:outline-none focus:border-[#B88E3E]"
+                />
+              </div>
+            </div>
+
+            {/* Customer Stats Cards */}
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="p-4 rounded-2xl bg-white border border-[#EADBCE] shadow-xs">
+                <span className="text-xs text-[#7A7169]">Total Customers</span>
+                <p className="font-serif text-xl sm:text-2xl font-bold text-[#1F1C1A] mt-1">{customersList.length}</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-white border border-[#EADBCE] shadow-xs">
+                <span className="text-xs text-[#7A7169]">Total Orders</span>
+                <p className="font-serif text-xl sm:text-2xl font-bold text-[#1F1C1A] mt-1">{orders.length}</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-white border border-[#EADBCE] shadow-xs">
+                <span className="text-xs text-[#7A7169]">Total Revenue</span>
+                <p className="font-serif text-xl sm:text-2xl font-bold text-[#B88E3E] mt-1 break-words">
+                  Rs. {totalSales.toLocaleString()}
+                </p>
+              </div>
+              <div className="p-4 rounded-2xl bg-white border border-[#EADBCE] shadow-xs">
+                <span className="text-xs text-[#7A7169]">Repeat Customers</span>
+                <p className="font-serif text-xl sm:text-2xl font-bold text-emerald-700 mt-1">
+                  {customersList.filter((c) => c.orderCount > 1).length}
+                </p>
+              </div>
+            </div>
+
+            {/* Customers Table */}
+            <div className="bg-white rounded-2xl border border-[#EADBCE] overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[720px] text-xs text-left text-[#4A423D]">
+                  <thead className="bg-[#FAF8F5] text-[#1F1C1A] uppercase tracking-wider font-semibold border-b border-[#EADBCE]">
+                    <tr>
+                      <th className="py-3 px-4">Customer Name</th>
+                      <th className="py-3 px-4">Contact Info</th>
+                      <th className="py-3 px-4">Delivery City & Address</th>
+                      <th className="py-3 px-4 text-center">Orders Placed</th>
+                      <th className="py-3 px-4">Total Spent (PKR)</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#EADBCE]">
+                    {customersList.map((c) => (
+                      <tr key={c.id} className="hover:bg-[#FAF8F5]/80 transition">
+                        <td className="py-3 px-4">
+                          <p className="font-bold text-xs text-[#1F1C1A]">{c.fullName}</p>
+                          <span className="text-[10px] text-[#8C827A]">
+                            Last order: {new Date(c.latestOrderDate).toLocaleDateString()} ({c.latestStatus})
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <p className="font-medium text-[#1F1C1A]">{c.phone}</p>
+                          <p className="text-[10px] text-[#8C827A]">{c.email}</p>
+                        </td>
+                        <td className="py-3 px-4">
+                          <p className="font-semibold text-[#1F1C1A]">{c.city}</p>
+                          <p className="text-[10px] text-[#8C827A] line-clamp-1">{c.address}</p>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <span className="px-2.5 py-0.5 rounded-full bg-[#FAF8F5] border border-[#EADBCE] font-bold text-[#1F1C1A]">
+                            {c.orderCount}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 font-bold text-[#1F1C1A]">
+                          Rs. {c.totalSpent.toLocaleString()}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <a
+                            href={`https://wa.me/92${c.phone.replace(/^0/, '').replace(/\D/g, '')}?text=Assalam-o-Alaikum%20${encodeURIComponent(c.fullName)}%2C%20thank%20you%20for%20shopping%20with%20NOOR%20STUDIO.`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-semibold shadow-xs transition"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            <span>WhatsApp</span>
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ================= ORDER DETAILS MODAL ================= */}
       {selectedOrderDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-[#EADBCE] max-h-[90vh] overflow-y-auto space-y-4">
-            <div className="flex items-center justify-between border-b border-[#EADBCE] pb-3">
-              <div>
-                <span className="font-mono text-base font-bold text-[#1F1C1A]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-4 sm:p-8 shadow-2xl border border-[#EADBCE] max-h-[90vh] overflow-y-auto space-y-4">
+            <div className="flex items-start sm:items-center justify-between border-b border-[#EADBCE] pb-3 gap-2">
+              <div className="min-w-0">
+                <span className="font-mono text-sm sm:text-base font-bold text-[#1F1C1A]">
                   Order #{selectedOrderDetails.orderNumber}
                 </span>
                 <p className="text-xs text-[#8C827A]">
@@ -1709,20 +2538,20 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
               </div>
               <button
                 onClick={() => setSelectedOrderDetails(null)}
-                className="p-1 rounded-full hover:bg-gray-100 text-gray-500"
+                className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 shrink-0"
               >
                 ✕
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div className="p-3 rounded-xl bg-[#FAF8F5] border border-[#EADBCE]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
+              <div className="p-3 rounded-xl bg-[#FAF8F5] border border-[#EADBCE] min-w-0">
                 <p className="font-bold text-[#1F1C1A] mb-1">Customer Information</p>
                 <p>Name: {selectedOrderDetails.customer.fullName}</p>
                 <p>Phone: {selectedOrderDetails.customer.phone}</p>
-                <p>Email: {selectedOrderDetails.customer.email || 'N/A'}</p>
+                <p className="break-all">Email: {selectedOrderDetails.customer.email || 'N/A'}</p>
               </div>
-              <div className="p-3 rounded-xl bg-[#FAF8F5] border border-[#EADBCE]">
+              <div className="p-3 rounded-xl bg-[#FAF8F5] border border-[#EADBCE] min-w-0">
                 <p className="font-bold text-[#1F1C1A] mb-1">Shipping Address</p>
                 <p>{selectedOrderDetails.customer.address}</p>
                 <p>City: {selectedOrderDetails.customer.city}</p>
@@ -1743,15 +2572,15 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
                     <img
                       src={i.image}
                       alt={i.productName}
-                      className="w-12 h-14 object-cover object-top rounded-md border"
+                      className="w-12 h-14 object-cover object-top rounded-md border shrink-0"
                     />
-                    <div className="flex-1">
-                      <p className="font-semibold text-[#1F1C1A]">{i.productName}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-[#1F1C1A] truncate">{i.productName}</p>
                       <p className="text-[#8C827A]">
                         Color: {i.colorName} | Size: {i.size} | Qty: {i.quantity}
                       </p>
                     </div>
-                    <span className="font-bold text-[#1F1C1A]">
+                    <span className="font-bold text-[#1F1C1A] shrink-0">
                       Rs. {(i.price * i.quantity).toLocaleString()}
                     </span>
                   </div>
@@ -1827,10 +2656,10 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
 
       {/* ================= ADD / EDIT PRODUCT MODAL ================= */}
       {showProductModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-2xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl border border-[#EADBCE] max-h-[90vh] overflow-y-auto space-y-5">
-            <div className="flex items-center justify-between border-b border-[#EADBCE] pb-3">
-              <h3 className="font-serif text-xl font-bold text-[#1F1C1A]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-3xl w-full p-4 sm:p-8 shadow-2xl border border-[#EADBCE] max-h-[90vh] overflow-y-auto space-y-5">
+            <div className="flex items-center justify-between border-b border-[#EADBCE] pb-3 gap-2">
+              <h3 className="font-serif text-lg sm:text-xl font-bold text-[#1F1C1A]">
                 {editingProduct ? 'Edit Fashion Ensemble' : 'Add New Fashion Ensemble'}
               </h3>
               <button
@@ -2032,8 +2861,8 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
 
               {/* DYNAMIC COLOR VARIATIONS & DIRECT DEVICE PHOTO UPLOAD */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0">
                     <span className="font-bold text-[#1F1C1A] uppercase tracking-wider text-xs block">
                       Color Variations & Photo Uploads ({prodForm.colors.length})
                     </span>
@@ -2044,7 +2873,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
                   <button
                     type="button"
                     onClick={handleAddColorVariation}
-                    className="px-2.5 py-1 rounded bg-[#B88E3E] text-white text-[11px] font-semibold hover:bg-[#9E7730] transition flex items-center gap-1"
+                    className="px-2.5 py-1 rounded bg-[#B88E3E] text-white text-[11px] font-semibold hover:bg-[#9E7730] transition flex items-center gap-1 shrink-0"
                   >
                     <Plus className="w-3 h-3" />
                     <span>Add Color</span>
@@ -2094,7 +2923,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
                               newCols[colIdx].hex = e.target.value;
                               setProdForm({ ...prodForm, colors: newCols });
                             }}
-                            className="w-8 h-8 rounded border p-0.5 cursor-pointer"
+                            className="w-8 h-8 rounded border p-0.5 cursor-pointer shrink-0"
                           />
                           <input
                             type="text"
@@ -2104,7 +2933,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
                               newCols[colIdx].hex = e.target.value;
                               setProdForm({ ...prodForm, colors: newCols });
                             }}
-                            className="flex-1 px-3 py-1.5 rounded border border-[#D9CCC2] bg-white font-mono"
+                            className="min-w-0 flex-1 px-3 py-1.5 rounded border border-[#D9CCC2] bg-white font-mono"
                           />
                         </div>
                       </div>
@@ -2129,7 +2958,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
                         <label className="block text-[11px] font-bold text-[#1F1C1A]">
                           Product Photos for {color.name || 'this variation'} ({color.images?.length || 0})
                         </label>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           {/* Direct Device Upload */}
                           <label className="cursor-pointer px-2.5 py-1 rounded-md bg-[#1F1C1A] text-white text-[11px] font-medium hover:bg-[#B88E3E] transition flex items-center gap-1.5">
                             <Upload className="w-3.5 h-3.5" />
@@ -2215,7 +3044,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
                     {/* Size and Stock */}
                     <div>
                       <label className="block text-[11px] font-semibold mb-1">Sizes & Stock Levels (Total Units)</label>
-                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                      <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-5 gap-2">
                         {color.sizes.map((s, szIdx) => (
                           <div key={s.size} className="p-2 rounded bg-white border border-[#D9CCC2] text-center">
                             <span className="font-bold text-[10px] block text-[#1F1C1A]">{s.size}</span>
@@ -2269,11 +3098,11 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
 
       {/* ================= PHOTO LIBRARY PICKER MODAL ================= */}
       {showLibraryModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-2xl max-w-4xl w-full p-6 shadow-2xl border border-[#EADBCE] max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-[#EADBCE] pb-3">
-              <div>
-                <h3 className="font-serif text-lg font-bold text-[#1F1C1A]">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl border border-[#EADBCE] max-h-[88vh] flex flex-col">
+            <div className="flex items-start sm:items-center justify-between border-b border-[#EADBCE] pb-3 gap-2">
+              <div className="min-w-0">
+                <h3 className="font-serif text-base sm:text-lg font-bold text-[#1F1C1A]">
                   NOOR STUDIO High-Resolution Fashion Asset Library
                 </h3>
                 <p className="text-xs text-[#8C827A]">
@@ -2282,14 +3111,14 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
               </div>
               <button
                 onClick={() => setShowLibraryModal(false)}
-                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center text-sm"
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center text-sm shrink-0"
               >
                 ✕
               </button>
             </div>
 
             {/* Assets Grid */}
-            <div className="flex-1 overflow-y-auto p-2 my-4 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+            <div className="flex-1 overflow-y-auto p-1.5 sm:p-2 my-3 sm:my-4 grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2.5 sm:gap-3">
               {AVAILABLE_STORE_ASSETS.map((asset, idx) => {
                 const label = asset.name;
                 return (

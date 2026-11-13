@@ -21,14 +21,15 @@ interface ShopPageProps {
 
 const AVAILABLE_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'Unstitched'];
 const COLOR_PALETTE = [
-  { name: 'Black', hex: '#111111' },
-  { name: 'Golden', hex: '#C59A45' },
-  { name: 'Red', hex: '#8B111A' },
-  { name: 'Pink', hex: '#EAA9A2' },
-  { name: 'Emerald', hex: '#0D3826' },
-  { name: 'Maroon', hex: '#520B13' },
-  { name: 'Navy', hex: '#14223E' },
-  { name: 'White', hex: '#F7F5F0' },
+  { name: 'Black', hex: '#1C1919' },
+  { name: 'Pink', hex: '#E5A7B5' },
+  { name: 'Sage', hex: '#7D9992' },
+  { name: 'Mint', hex: '#A9BFB2' },
+  { name: 'Mauve', hex: '#B3808B' },
+  { name: 'Maroon', hex: '#7C242C' },
+  { name: 'Plum', hex: '#582148' },
+  { name: 'Gold', hex: '#D49017' },
+  { name: 'Beige', hex: '#CBB2A1' },
 ];
 
 export const ShopPage: React.FC<ShopPageProps> = ({
@@ -55,12 +56,12 @@ export const ShopPage: React.FC<ShopPageProps> = ({
   React.useEffect(() => {
     if (initialCategory) {
       setSelectedCategory(initialCategory);
-      if (initialCategory === 'Sale') {
-        setOnSaleOnly(true);
-      }
+      setOnSaleOnly(initialCategory === 'Sale');
     }
     if (initialSubcategory) {
       setSelectedSubcategory(initialSubcategory);
+    } else {
+      setSelectedSubcategory('All');
     }
   }, [initialCategory, initialSubcategory]);
 
@@ -69,7 +70,7 @@ export const ShopPage: React.FC<ShopPageProps> = ({
     return products.filter((p) => {
       if (!p.isActive) return false;
 
-      // Category filter
+      // Category filter (strict separation matching HomePage)
       if (selectedCategory !== 'All') {
         if (selectedCategory === 'Sale') {
           if (!p.salePrice || p.salePrice >= p.regularPrice) return false;
@@ -77,22 +78,18 @@ export const ShopPage: React.FC<ShopPageProps> = ({
           if (!p.isNewArrival && p.category !== 'New Arrivals') return false;
         } else if (selectedCategory === 'Summer Wear') {
           const isSummer =
-            p.category === 'Summer Wear' ||
-            p.season === 'Summer' ||
-            p.additionalCategories?.includes('Summer Wear');
+            p.season === 'Summer' &&
+            (p.category === 'Summer Wear' || p.additionalCategories?.includes('Summer Wear'));
           if (!isSummer) return false;
         } else if (selectedCategory === 'Winter Wear') {
           const isWinter =
-            p.category === 'Winter Wear' ||
-            p.season === 'Winter' ||
-            p.additionalCategories?.includes('Winter Wear');
+            p.season === 'Winter' &&
+            (p.category === 'Winter Wear' || p.additionalCategories?.includes('Winter Wear'));
           if (!isWinter) return false;
         } else if (selectedCategory === 'Wedding Wear') {
           const isWedding =
             p.category === 'Wedding Wear' ||
-            p.additionalCategories?.includes('Wedding Wear') ||
-            p.name.toLowerCase().includes('wedding') ||
-            p.name.toLowerCase().includes('lehenga');
+            p.additionalCategories?.includes('Wedding Wear');
           if (!isWedding) return false;
         } else if (selectedCategory === 'Formal Wear') {
           const isFormal =
@@ -101,34 +98,24 @@ export const ShopPage: React.FC<ShopPageProps> = ({
           if (!isFormal) return false;
         } else if (selectedCategory === 'Stitched') {
           const isStitched =
-            p.category === 'Stitched' ||
-            p.isStitched === true ||
-            p.additionalCategories?.includes('Stitched');
+            p.isStitched === true &&
+            (p.category === 'Stitched' || p.additionalCategories?.includes('Stitched'));
           if (!isStitched) return false;
         } else if (selectedCategory === 'Unstitched') {
           const isUnstitched =
-            p.category === 'Unstitched' ||
-            p.isStitched === false ||
-            p.additionalCategories?.includes('Unstitched');
+            p.isStitched === false &&
+            (p.category === 'Unstitched' || p.additionalCategories?.includes('Unstitched'));
           if (!isUnstitched) return false;
         } else if (selectedCategory === 'Casual Wear') {
           const isCasual =
             p.category === 'Casual Wear' ||
-            p.category === 'Casual & Semi-Formal' ||
             p.additionalCategories?.includes('Casual Wear');
           if (!isCasual) return false;
-        } else if (selectedCategory === 'Trousers & Shalwar') {
-          const isTrousersShalwar =
-            p.category === 'Trousers & Shalwar' ||
-            p.additionalCategories?.includes('Trousers & Shalwar') ||
-            p.subcategory === 'Trousers' ||
-            p.subcategory === 'Pajamas' ||
-            p.subcategory === 'Shalwar' ||
-            p.subcategory === 'Shalwar Kameez' ||
-            p.name.toLowerCase().includes('trouser') ||
-            p.name.toLowerCase().includes('pajama') ||
-            p.name.toLowerCase().includes('shalwar');
-          if (!isTrousersShalwar) return false;
+        } else if (selectedCategory === 'Bottoms') {
+          const isBottoms =
+            p.category === 'Bottoms' ||
+            p.additionalCategories?.includes('Bottoms');
+          if (!isBottoms) return false;
         } else if (p.category !== selectedCategory && !p.additionalCategories?.includes(selectedCategory)) {
           return false;
         }
@@ -235,9 +222,9 @@ export const ShopPage: React.FC<ShopPageProps> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fadeIn pb-20">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 animate-fadeIn pb-16 sm:pb-20">
       {/* Page Title & Search Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#EADBCE] pb-6 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#EADBCE] pb-5 mb-6 sm:mb-8">
         <div>
           <span className="text-xs uppercase tracking-widest font-semibold text-[#B88E3E]">
             NOOR STUDIO Collection
@@ -356,29 +343,7 @@ export const ShopPage: React.FC<ShopPageProps> = ({
             </div>
           )}
 
-          {/* Trousers, Pajamas & Shalwar subcategories */}
-          {selectedCategory === 'Trousers & Shalwar' && (
-            <div className="pt-4 border-t border-[#F2ECE6]">
-              <label className="block text-xs font-bold text-[#1F1C1A] uppercase tracking-wider mb-2.5">
-                Type / Cut
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {['All', 'Trousers', 'Pajamas', 'Shalwar', 'Shalwar Kameez'].map((sub) => (
-                  <button
-                    key={sub}
-                    onClick={() => setSelectedSubcategory(sub)}
-                    className={`py-1 px-2.5 rounded-lg border text-xs font-medium transition ${
-                      selectedSubcategory === sub
-                        ? 'border-[#B88E3E] bg-[#F7F4EE] text-[#B88E3E] font-bold'
-                        : 'border-[#D9CCC2] text-[#5A524C] hover:border-[#B88E3E]'
-                    }`}
-                  >
-                    {sub}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+
 
           {/* Size Filter */}
           <div className="pt-4 border-t border-[#F2ECE6]">
@@ -481,7 +446,7 @@ export const ShopPage: React.FC<ShopPageProps> = ({
         {/* Product Grid Area (9 Cols) */}
         <div className="lg:col-span-9 space-y-6">
           {/* Top Sort & Filter Bar for Mobile */}
-          <div className="flex items-center justify-between bg-white p-3.5 rounded-2xl border border-[#EADBCE] shadow-sm text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-white p-3 sm:p-3.5 rounded-2xl border border-[#EADBCE] shadow-sm text-xs">
             {/* Mobile Filter Button */}
             <button
               onClick={() => setMobileFilterOpen(true)}
@@ -502,7 +467,7 @@ export const ShopPage: React.FC<ShopPageProps> = ({
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="px-3 py-1.5 rounded-lg border border-[#D9CCC2] bg-white font-semibold text-[#1F1C1A] focus:outline-none focus:border-[#B88E3E]"
+                className="px-2.5 sm:px-3 py-1.5 rounded-lg border border-[#D9CCC2] bg-white font-semibold text-[#1F1C1A] focus:outline-none focus:border-[#B88E3E] text-xs"
               >
                 <option value="newest">Newest First</option>
                 <option value="price-asc">Price: Low to High</option>
@@ -520,10 +485,10 @@ export const ShopPage: React.FC<ShopPageProps> = ({
                 {selectedCategory === 'Summer Wear' ? '☀️ Summer Pieces:' : '❄️ Winter Pieces:'}
               </span>
               {[
-                { id: 'All', label: 'All Ensembles' },
-                { id: '1 Piece', label: '1 Piece (Kurti / Kurta)' },
-                { id: '2 Piece', label: '2 Piece (Suit Set)' },
-                { id: '3 Piece', label: '3 Piece (Complete Suit)' },
+                { id: 'All', label: 'All' },
+                { id: '1 Piece', label: '1 Piece' },
+                { id: '2 Piece', label: '2 Piece' },
+                { id: '3 Piece', label: '3 Piece' },
               ].map((pill) => (
                 <button
                   key={pill.id}
@@ -540,53 +505,65 @@ export const ShopPage: React.FC<ShopPageProps> = ({
             </div>
           )}
 
-          {/* Quick Subcategory Pills for Trousers & Shalwar */}
-          {selectedCategory === 'Trousers & Shalwar' && (
-            <div className="flex flex-wrap items-center gap-2 p-3 bg-[#FAF8F5] rounded-xl border border-[#EADBCE]">
-              <span className="text-xs font-bold text-[#1F1C1A] uppercase tracking-wider mr-1">
-                ✨ Bottoms & Cuts:
-              </span>
-              {[
-                { id: 'All', label: 'All Items' },
-                { id: 'Trousers', label: 'Trousers (Straight & Silk)' },
-                { id: 'Pajamas', label: 'Pajamas (Cotton Stretch)' },
-                { id: 'Shalwar', label: 'Shalwar (Pleated & Tulip)' },
-                { id: 'Shalwar Kameez', label: 'Shalwar Kameez (2PC)' },
-              ].map((pill) => (
-                <button
-                  key={pill.id}
-                  onClick={() => setSelectedSubcategory(pill.id)}
-                  className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition ${
-                    selectedSubcategory === pill.id
-                      ? 'bg-[#1F1C1A] text-white shadow-sm'
-                      : 'bg-white border border-[#D9CCC2] text-[#5A524C] hover:border-[#1F1C1A]'
-                  }`}
-                >
-                  {pill.label}
-                </button>
-              ))}
-            </div>
-          )}
 
           {/* Product Grid */}
           {filteredProducts.length === 0 ? (
-            <div className="p-16 text-center bg-white rounded-2xl border border-[#EADBCE] space-y-4">
-              <div className="w-16 h-16 rounded-full bg-[#FAF8F5] flex items-center justify-center mx-auto text-[#B88E3E]">
-                <ShoppingBag className="w-8 h-8" />
+            selectedCategory === 'Bottoms' ? (
+              <div className="p-12 sm:p-20 text-center bg-[#FAF8F5] rounded-3xl border border-[#EADBCE] space-y-4 animate-fadeIn max-w-2xl mx-auto my-6">
+                <div className="w-16 h-16 rounded-full bg-white border border-[#B88E3E] flex items-center justify-center mx-auto text-[#B88E3E] shadow-sm">
+                  <Sparkles className="w-8 h-8" />
+                </div>
+                <div className="space-y-2">
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-[#B88E3E] bg-white px-3 py-1 rounded-full border border-[#EADBCE]">
+                    NOOR STUDIO • NEW COLLECTION
+                  </span>
+                  <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A]">
+                    Bottoms Collection Uploading Soon
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[#7A7169] max-w-md mx-auto leading-relaxed">
+                    Hamari exclusive Bottoms collection (trousers, pajamas, shalwars) ki pictures aur nayi designs jald yahan upload hongi.
+                  </p>
+                </div>
+                <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
+                  <button
+                    onClick={() => {
+                      setSelectedCategory('Stitched');
+                      setSelectedSubcategory('All');
+                    }}
+                    className="px-6 py-2.5 rounded-xl bg-[#1F1C1A] text-white text-xs font-bold hover:bg-[#B88E3E] transition shadow-sm"
+                  >
+                    Explore Stitched Collection
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedCategory('All');
+                      setSelectedSubcategory('All');
+                    }}
+                    className="px-6 py-2.5 rounded-xl border border-[#D9CCC2] bg-white text-[#1F1C1A] text-xs font-semibold hover:border-[#1F1C1A] transition"
+                  >
+                    View All Collections
+                  </button>
+                </div>
               </div>
-              <h3 className="font-serif text-xl font-bold text-[#1F1C1A]">No Ensembles Found</h3>
-              <p className="text-xs text-[#7A7169] max-w-sm mx-auto">
-                We couldn&apos;t find any designs matching your specific filter criteria. Try resetting filters or adjusting search keywords.
-              </p>
-              <button
-                onClick={clearAllFilters}
-                className="px-6 py-2.5 rounded-xl bg-[#1F1C1A] text-white text-xs font-semibold hover:bg-[#B88E3E] transition"
-              >
-                Reset All Filters
-              </button>
-            </div>
+            ) : (
+              <div className="p-16 text-center bg-white rounded-2xl border border-[#EADBCE] space-y-4">
+                <div className="w-16 h-16 rounded-full bg-[#FAF8F5] flex items-center justify-center mx-auto text-[#B88E3E]">
+                  <ShoppingBag className="w-8 h-8" />
+                </div>
+                <h3 className="font-serif text-xl font-bold text-[#1F1C1A]">No Ensembles Found</h3>
+                <p className="text-xs text-[#7A7169] max-w-sm mx-auto">
+                  We couldn&apos;t find any designs matching your specific filter criteria. Try resetting filters or adjusting search keywords.
+                </p>
+                <button
+                  onClick={clearAllFilters}
+                  className="px-6 py-2.5 rounded-xl bg-[#1F1C1A] text-white text-xs font-semibold hover:bg-[#B88E3E] transition"
+                >
+                  Reset All Filters
+                </button>
+              </div>
+            )
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5 lg:gap-6">
               {displayedProducts.map((product) => (
                 <ProductCard key={product.id} product={product} onSelect={onSelectProduct} />
               ))}
@@ -610,13 +587,14 @@ export const ShopPage: React.FC<ShopPageProps> = ({
       {/* Mobile Filter Modal */}
       {mobileFilterOpen && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm lg:hidden animate-fadeIn">
-          <div className="w-full max-w-xs bg-white h-full p-6 shadow-2xl flex flex-col justify-between overflow-y-auto">
-            <div className="space-y-6">
+          <div className="w-[88vw] max-w-xs bg-white h-full p-5 sm:p-6 shadow-2xl flex flex-col justify-between overflow-y-auto">
+            <div className="space-y-5">
               <div className="flex items-center justify-between border-b border-[#EADBCE] pb-3">
                 <span className="font-serif font-bold text-base text-[#1F1C1A]">Filters</span>
                 <button
                   onClick={() => setMobileFilterOpen(false)}
-                  className="p-1 rounded-full text-gray-400 hover:text-black"
+                  className="p-1.5 rounded-full text-gray-400 hover:text-black"
+                  aria-label="Close filters"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -627,9 +605,12 @@ export const ShopPage: React.FC<ShopPageProps> = ({
                 <label className="block text-xs font-bold text-[#1F1C1A] mb-2 uppercase">Category</label>
                 <div className="space-y-1 text-xs">
                   <button
-                    onClick={() => setSelectedCategory('All')}
-                    className={`w-full text-left py-1.5 px-2 rounded ${
-                      selectedCategory === 'All' ? 'bg-[#1F1C1A] text-white font-bold' : ''
+                    onClick={() => {
+                      setSelectedCategory('All');
+                      setSelectedSubcategory('All');
+                    }}
+                    className={`w-full text-left py-2 px-2.5 rounded-lg ${
+                      selectedCategory === 'All' ? 'bg-[#1F1C1A] text-white font-bold' : 'hover:bg-[#FAF8F5]'
                     }`}
                   >
                     All Categories
@@ -637,27 +618,59 @@ export const ShopPage: React.FC<ShopPageProps> = ({
                   {categories.map((c) => (
                     <button
                       key={c.id}
-                      onClick={() => setSelectedCategory(c.name)}
-                      className={`w-full text-left py-1.5 px-2 rounded ${
-                        selectedCategory === c.name ? 'bg-[#1F1C1A] text-white font-bold' : ''
+                      onClick={() => {
+                        setSelectedCategory(c.name);
+                        setSelectedSubcategory('All');
+                      }}
+                      className={`w-full text-left py-2 px-2.5 rounded-lg flex items-center justify-between ${
+                        selectedCategory === c.name ? 'bg-[#1F1C1A] text-white font-bold' : 'hover:bg-[#FAF8F5]'
                       }`}
                     >
-                      {c.name}
+                      <span>{c.name}</span>
+                      {c.name === 'Sale' && (
+                        <span className="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold">
+                          SALE
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
               </div>
 
+              {/* Piece / Silhouette Subcategory */}
+              {(selectedCategory === 'Summer Wear' || selectedCategory === 'Winter Wear' || selectedCategory === 'Stitched') && (
+                <div className="pt-4 border-t border-[#F2ECE6]">
+                  <label className="block text-xs font-bold text-[#1F1C1A] mb-2 uppercase">
+                    Piece / Silhouette
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['All', '1 Piece', '2 Piece', '3 Piece'].map((sub) => (
+                      <button
+                        key={sub}
+                        onClick={() => setSelectedSubcategory(sub)}
+                        className={`py-1.5 px-3 rounded-lg border text-xs font-medium ${
+                          selectedSubcategory === sub
+                            ? 'border-[#B88E3E] bg-[#F7F4EE] text-[#B88E3E] font-bold'
+                            : 'border-[#D9CCC2] text-[#5A524C]'
+                        }`}
+                      >
+                        {sub}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Sizes */}
-              <div>
+              <div className="pt-4 border-t border-[#F2ECE6]">
                 <label className="block text-xs font-bold text-[#1F1C1A] mb-2 uppercase">Sizes</label>
                 <div className="grid grid-cols-3 gap-1.5">
                   {['All', ...AVAILABLE_SIZES].map((sz) => (
                     <button
                       key={sz}
                       onClick={() => setSelectedSize(sz)}
-                      className={`py-1 rounded border text-xs font-semibold ${
-                        selectedSize === sz ? 'bg-[#1F1C1A] text-white' : 'border-[#D9CCC2]'
+                      className={`py-1.5 rounded-lg border text-xs font-semibold ${
+                        selectedSize === sz ? 'bg-[#1F1C1A] text-white border-[#1F1C1A]' : 'border-[#D9CCC2] text-[#5A524C]'
                       }`}
                     >
                       {sz}
@@ -666,8 +679,42 @@ export const ShopPage: React.FC<ShopPageProps> = ({
                 </div>
               </div>
 
+              {/* Color Palette */}
+              <div className="pt-4 border-t border-[#F2ECE6]">
+                <label className="block text-xs font-bold text-[#1F1C1A] mb-2 uppercase">Color Palette</label>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    onClick={() => setSelectedColor('All')}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
+                      selectedColor === 'All'
+                        ? 'border-[#1F1C1A] bg-[#1F1C1A] text-white'
+                        : 'border-[#D9CCC2] text-[#5A524C]'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {COLOR_PALETTE.map((c) => (
+                    <button
+                      key={c.name}
+                      onClick={() => setSelectedColor(c.name)}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] border transition ${
+                        selectedColor === c.name
+                          ? 'border-[#B88E3E] bg-[#F7F4EE] ring-1 ring-[#B88E3E] font-semibold'
+                          : 'border-[#D9CCC2]'
+                      }`}
+                    >
+                      <span
+                        className="w-2.5 h-2.5 rounded-full border border-black/20"
+                        style={{ backgroundColor: c.hex }}
+                      />
+                      <span>{c.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Price */}
-              <div>
+              <div className="pt-4 border-t border-[#F2ECE6]">
                 <label className="block text-xs font-bold text-[#1F1C1A] mb-1 uppercase">
                   Max Price: Rs. {maxPrice.toLocaleString()}
                 </label>
@@ -681,9 +728,31 @@ export const ShopPage: React.FC<ShopPageProps> = ({
                   className="w-full accent-[#B88E3E]"
                 />
               </div>
+
+              {/* Stock & Sale Toggles */}
+              <div className="pt-4 border-t border-[#F2ECE6] space-y-2.5 text-xs">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={inStockOnly}
+                    onChange={(e) => setInStockOnly(e.target.checked)}
+                    className="w-4 h-4 text-[#B88E3E] rounded border-[#D9CCC2]"
+                  />
+                  <span className="text-[#4A423D] font-medium">In Stock Items Only</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={onSaleOnly}
+                    onChange={(e) => setOnSaleOnly(e.target.checked)}
+                    className="w-4 h-4 text-[#B88E3E] rounded border-[#D9CCC2]"
+                  />
+                  <span className="text-red-600 font-semibold">Sale &amp; Clearance Only</span>
+                </label>
+              </div>
             </div>
 
-            <div className="pt-6 border-t border-[#EADBCE] space-y-2">
+            <div className="pt-5 mt-5 border-t border-[#EADBCE] space-y-2 shrink-0">
               <button
                 onClick={() => setMobileFilterOpen(false)}
                 className="w-full py-3 rounded-xl bg-[#1F1C1A] text-white text-xs font-semibold uppercase tracking-wider"

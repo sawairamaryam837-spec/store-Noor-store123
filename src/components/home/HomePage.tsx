@@ -3,17 +3,12 @@ import {
   ArrowRight,
   Sparkles,
   ShoppingBag,
-  ShieldCheck,
-  Truck,
-  RefreshCw,
   Star,
   ChevronRight,
-  TrendingUp,
   Percent,
-  Clock,
+  Mail,
   CheckCircle2,
-  PhoneCall,
-  MessageCircle,
+  Award,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { ProductCard } from '../product/ProductCard';
@@ -46,7 +41,7 @@ const HERO_SLIDES = [
     subtitle: 'Adda Neckline & Heavy Embroidered Dupatta 3PC',
     price: 'Rs. 5,500',
     tag: 'Exclusive Release',
-    image: '/assets/aistudio/MOST_ELEGANT_OUTFITT_BY_IZNIK_23851c85.jpeg',
+    image: '/assets/aistudio/MOST_ELEGANT_OUTFITT_BY_IZNIK__3__b0971e8e.jpeg',
     category: 'Formal Wear',
   },
 ];
@@ -54,9 +49,14 @@ const HERO_SLIDES = [
 export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectProduct }) => {
   const { products, categories } = useStore();
   const [activeSlide, setActiveSlide] = useState(0);
-  const [activeSeasonTab, setActiveSeasonTab] = useState<'all' | 'summer' | 'winter' | 'formal' | 'sale'>('all');
-  const [activeSeasonPiece, setActiveSeasonPiece] = useState<'All' | '1 Piece' | '2 Piece' | '3 Piece'>('All');
-  const [activeTrousersTab, setActiveTrousersTab] = useState<'All' | 'Trousers' | 'Pajamas' | 'Shalwar' | 'Shalwar Kameez'>('All');
+
+  // Summer & Winter piece filters
+  const [activeSummerPiece, setActiveSummerPiece] = useState<'All' | '1 Piece' | '2 Piece' | '3 Piece'>('All');
+  const [activeWinterPiece, setActiveWinterPiece] = useState<'All' | '1 Piece' | '2 Piece' | '3 Piece'>('All');
+
+  // Newsletter subscription
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
 
   // Auto-advance hero slides every 5.5s
   useEffect(() => {
@@ -66,61 +66,113 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
     return () => clearInterval(timer);
   }, []);
 
-  const newArrivals = products.filter((p) => p.isNewArrival || p.category === 'New Arrivals').slice(0, 8);
-  const bestSellers = products.filter((p) => p.isBestSeller).slice(0, 8);
-  const formalWear = products.filter((p) => p.category === 'Formal Wear' || p.category === 'Wedding Wear').slice(0, 8);
+  const activeProducts = products.filter((p) => p.isActive !== false);
 
-  // Filtered products for interactive showcase tab
-  const tabFilteredProducts = products.filter((p) => {
-    let matchSeason = true;
-    if (activeSeasonTab === 'summer') matchSeason = p.season === 'Summer' || p.category === 'Summer Wear';
-    else if (activeSeasonTab === 'winter') matchSeason = p.season === 'Winter' || p.category === 'Winter Wear';
-    else if (activeSeasonTab === 'formal') matchSeason = p.category === 'Formal Wear' || p.category === 'Wedding Wear';
-    else if (activeSeasonTab === 'sale') matchSeason = (p.salePrice && p.salePrice < p.regularPrice) || p.category === 'Sale';
-    if (!matchSeason) return false;
+  // Sorted categories strictly by order 1-10
+  const sortedCategories = [...categories].sort((a, b) => a.order - b.order);
 
-    if ((activeSeasonTab === 'summer' || activeSeasonTab === 'winter') && activeSeasonPiece !== 'All') {
-      if (p.subcategory !== activeSeasonPiece && !p.type?.includes(activeSeasonPiece)) return false;
-    }
-    return true;
-  }).slice(0, 8);
+  // 3. New Arrivals (Latest drops, model-first)
+  const newArrivals = activeProducts
+    .filter((p) => p.isNewArrival || p.category === 'New Arrivals')
+    .slice(0, 8);
 
-  // Trousers, Pajamas, Shalwar & Shalwar Kameez products
-  const trousersShowcaseProducts = products.filter((p) => {
-    const isTrousersShalwar =
-      p.category === 'Trousers & Shalwar' ||
-      p.subcategory === 'Trousers' ||
-      p.subcategory === 'Pajamas' ||
-      p.subcategory === 'Shalwar' ||
-      p.subcategory === 'Shalwar Kameez' ||
-      p.name.toLowerCase().includes('trouser') ||
-      p.name.toLowerCase().includes('pajama') ||
-      p.name.toLowerCase().includes('shalwar');
-    if (!isTrousersShalwar) return false;
+  // 5. Featured Collections (Curated signature pieces)
+  const featuredCollections = activeProducts
+    .filter((p) => p.isFeatured)
+    .slice(0, 8);
 
-    if (activeTrousersTab === 'All') return true;
-    if (activeTrousersTab === 'Trousers') return p.subcategory === 'Trousers' || p.name.toLowerCase().includes('trouser');
-    if (activeTrousersTab === 'Pajamas') return p.subcategory === 'Pajamas' || p.name.toLowerCase().includes('pajama');
-    if (activeTrousersTab === 'Shalwar') return (p.subcategory === 'Shalwar' || p.name.toLowerCase().includes('shalwar')) && !p.name.toLowerCase().includes('kameez');
-    if (activeTrousersTab === 'Shalwar Kameez') return p.subcategory === 'Shalwar Kameez' || p.name.toLowerCase().includes('kameez');
-    return true;
-  }).slice(0, 8);
+  // 6. Stitched Collection (Strictly Ready-to-Wear Stitched items only)
+  const stitchedCollection = activeProducts
+    .filter(
+      (p) =>
+        p.isStitched === true &&
+        (p.category === 'Stitched' || p.additionalCategories?.includes('Stitched'))
+    )
+    .sort((a, b) => (a.category === 'Stitched' ? -1 : 1) - (b.category === 'Stitched' ? -1 : 1))
+    .slice(0, 8);
+
+  // 7. Unstitched Collection (Strictly Unstitched fabric suits only)
+  const unstitchedCollection = activeProducts
+    .filter(
+      (p) =>
+        p.isStitched === false &&
+        (p.category === 'Unstitched' || p.additionalCategories?.includes('Unstitched'))
+    )
+    .sort((a, b) => (a.category === 'Unstitched' ? -1 : 1) - (b.category === 'Unstitched' ? -1 : 1))
+    .slice(0, 8);
+
+  // 8. Summer Wear (Strictly Summer fabrics, filterable by 1PC / 2PC / 3PC)
+  const summerWearFiltered = activeProducts
+    .filter((p) => {
+      const isSummer =
+        p.season === 'Summer' &&
+        (p.category === 'Summer Wear' || p.additionalCategories?.includes('Summer Wear'));
+      if (!isSummer) return false;
+      if (activeSummerPiece === 'All') return true;
+      return p.subcategory === activeSummerPiece || p.type?.includes(activeSummerPiece);
+    })
+    .sort((a, b) => (a.category === 'Summer Wear' ? -1 : 1) - (b.category === 'Summer Wear' ? -1 : 1))
+    .slice(0, 8);
+
+  // 9. Winter Wear (Strictly Winter khaddar/karandi/viscose fabrics, filterable by 1PC / 2PC / 3PC)
+  const winterWearFiltered = activeProducts
+    .filter((p) => {
+      const isWinter =
+        p.season === 'Winter' &&
+        (p.category === 'Winter Wear' || p.additionalCategories?.includes('Winter Wear'));
+      if (!isWinter) return false;
+      if (activeWinterPiece === 'All') return true;
+      return p.subcategory === activeWinterPiece || p.type?.includes(activeWinterPiece);
+    })
+    .sort((a, b) => (a.category === 'Winter Wear' ? -1 : 1) - (b.category === 'Winter Wear' ? -1 : 1))
+    .slice(0, 8);
+
+  // 10. Casual Wear (Everyday suits only, no bridal lehengas)
+  const casualWear = activeProducts
+    .filter((p) => p.category === 'Casual Wear' || p.additionalCategories?.includes('Casual Wear'))
+    .slice(0, 8);
+
+  // 11. Formal Wear (Festive Chiffon & Luxury Formals only)
+  const formalWear = activeProducts
+    .filter((p) => p.category === 'Formal Wear' || p.additionalCategories?.includes('Formal Wear'))
+    .sort((a, b) => (a.category === 'Formal Wear' ? -1 : 1) - (b.category === 'Formal Wear' ? -1 : 1))
+    .slice(0, 8);
+
+  // 12. Wedding Wear (Bridal Lehengas & Wedding Editions only)
+  const weddingWear = activeProducts
+    .filter((p) => p.category === 'Wedding Wear' || p.additionalCategories?.includes('Wedding Wear'))
+    .sort((a, b) => (a.category === 'Wedding Wear' ? -1 : 1) - (b.category === 'Wedding Wear' ? -1 : 1))
+    .slice(0, 8);
+
+  // 13. Bottoms (Exclusive uploaded products — empty until admin uploads)
+  const bottomsCollection = activeProducts
+    .filter((p) => p.category === 'Bottoms' || p.additionalCategories?.includes('Bottoms'))
+    .slice(0, 8);
 
   const currentHero = HERO_SLIDES[activeSlide];
 
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newsletterEmail) {
+      setNewsletterSubscribed(true);
+    }
+  };
+
   return (
-    <div className="space-y-14 sm:space-y-20 animate-fadeIn pb-16">
-      {/* TOP TICKER URGENCY BANNER */}
-      <div className="bg-gradient-to-r from-[#1F1C1A] via-[#332A26] to-[#1F1C1A] text-[#F3EFEA] py-2 px-4 text-center text-[11px] sm:text-xs font-medium border-b border-[#C5A059]/40 flex items-center justify-center gap-2">
-        <span className="inline-block w-2 h-2 rounded-full bg-[#25D366] animate-pulse" />
-        <span>
-          <strong>RAMADAN & FESTIVE EXHIBITION:</strong> Free PostEx Courier COD nationwide on orders above Rs. 3,500. Use code <span className="bg-[#C5A059] text-black px-1.5 py-0.2 rounded font-bold">NOOR10</span> for extra 10% off!
+    <div className="space-y-12 sm:space-y-16 animate-fadeIn pb-16">
+      {/* =========================================================================
+          SECTION 2: MAIN HERO BANNER & TICKER (WITH DESIGNER HOUSES)
+          ========================================================================= */}
+      {/* Top Ramadan & Festive Exhibition urgency banner */}
+      <div className="bg-gradient-to-r from-[#1F1C1A] via-[#332A26] to-[#1F1C1A] text-[#F3EFEA] py-2 px-3 sm:px-4 text-center text-[11px] sm:text-xs font-medium border-b border-[#C5A059]/40 flex items-center justify-center gap-2">
+        <span className="inline-block w-2 h-2 rounded-full bg-[#25D366] animate-pulse shrink-0" />
+        <span className="leading-snug">
+          <strong>RAMADAN &amp; FESTIVE EXHIBITION:</strong> Free PostEx Courier COD nationwide on orders above Rs. 3,500. Use code <span className="bg-[#C5A059] text-black px-1.5 py-0.5 rounded font-bold inline-block">NOOR10</span> for extra 10% off!
         </span>
       </div>
 
-      {/* LUXURY DYNAMIC HERO SECTION */}
+      {/* Main Luxury Hero Banner with model imagery */}
       <section className="relative overflow-hidden bg-[#F3EFEA] border-b border-[#EADBCE]">
-        {/* Ambient blush glow */}
         <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-[#F5D8D6]/40 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-[#EAD4BA]/40 blur-3xl pointer-events-none" />
 
@@ -134,8 +186,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
               </div>
 
               <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold text-[#1F1C1A] leading-[1.15] tracking-tight">
-                Wear Your Elegance, <br className="hidden sm:block" />
-                <span className="italic font-normal text-[#B88E3E]">Style of Excellence.</span>
+                Wear Your Elegance <br className="hidden sm:block" />
+                <span className="italic font-normal text-[#B88E3E]">Style of Excellence</span>
               </h1>
 
               <p className="text-xs sm:text-sm text-[#5A524C] leading-relaxed max-w-xl mx-auto lg:mx-0">
@@ -160,29 +212,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
                 </button>
               </div>
 
-              {/* Direct Helpline & WhatsApp Info */}
-              <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs text-[#7A7169]">
-                <a
-                  href="tel:03284454746"
-                  className="flex items-center gap-1.5 hover:text-[#B88E3E] font-medium"
-                >
-                  <PhoneCall className="w-3.5 h-3.5 text-[#B88E3E]" />
-                  <span>Helpline: <strong>03284454746</strong></span>
-                </a>
-                <span className="hidden sm:inline text-gray-300">•</span>
-                <a
-                  href="https://wa.me/923284454746"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-emerald-700 hover:text-emerald-800 font-semibold"
-                >
-                  <MessageCircle className="w-3.5 h-3.5" />
-                  <span>Instant WhatsApp Order</span>
-                </a>
-              </div>
-
-              {/* Interactive Slide Pills */}
-              <div className="pt-3 flex items-center justify-center lg:justify-start gap-2">
+              {/* Slide Selector Pills */}
+              <div className="pt-3 flex flex-wrap items-center justify-center lg:justify-start gap-2">
                 {HERO_SLIDES.map((slide, idx) => (
                   <button
                     key={idx}
@@ -199,7 +230,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
               </div>
             </div>
 
-            {/* Right Hero Images Composition (5 Cols) */}
+            {/* Right Hero Model Image Composition */}
             <div className="lg:col-span-5 relative flex justify-center">
               <div className="relative w-full max-w-sm aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl border-4 border-white bg-[#F7F4EE]">
                 <img
@@ -222,7 +253,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
                 </div>
               </div>
 
-              {/* Floating secondary badge */}
+              {/* Floating luxury badge */}
               <div className="absolute -bottom-5 -left-4 sm:left-4 p-3.5 rounded-xl bg-white/95 backdrop-blur-md border border-[#EADBCE] shadow-xl text-left hidden sm:flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-[#FAF8F5] border border-[#B88E3E] flex items-center justify-center text-[#B88E3E]">
                   <Sparkles className="w-5 h-5" />
@@ -237,7 +268,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
         </div>
       </section>
 
-      {/* DESIGNER BRANDS TICKER */}
+      {/* Featured Designer Houses ticker bar from reference screenshot */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="p-4 rounded-2xl bg-white border border-[#EADBCE] shadow-sm flex flex-col md:flex-row items-center justify-between gap-3 text-center md:text-left">
           <div className="flex items-center gap-2">
@@ -246,7 +277,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
               Featured Designer Houses:
             </span>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs font-medium text-[#7A7169]">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:gap-7 text-xs font-medium text-[#7A7169]">
             <span className="hover:text-[#B88E3E] font-semibold">MARIA.B</span>
             <span className="text-gray-300">•</span>
             <span className="hover:text-[#B88E3E] font-semibold">IZNIK</span>
@@ -264,100 +295,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
         </div>
       </section>
 
-      {/* TRUST FEATURES */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          <div className="p-5 rounded-2xl bg-white border border-[#EADBCE]/80 shadow-sm flex items-start gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-[#FAF8F5] border border-[#EADBCE] flex items-center justify-center text-[#B88E3E] shrink-0">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="font-serif text-sm font-bold text-[#1F1C1A]">Premium Quality</p>
-              <p className="text-[11px] text-[#7A7169] mt-0.5">Artisanal stitching & zari hand-embroidery</p>
-            </div>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-white border border-[#EADBCE]/80 shadow-sm flex items-start gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-[#FAF8F5] border border-[#EADBCE] flex items-center justify-center text-[#B88E3E] shrink-0">
-              <Truck className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="font-serif text-sm font-bold text-[#1F1C1A]">Fast Nationwide Delivery</p>
-              <p className="text-[11px] text-[#7A7169] mt-0.5">PostEx COD across all cities of Pakistan</p>
-            </div>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-white border border-[#EADBCE]/80 shadow-sm flex items-start gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-[#FAF8F5] border border-[#EADBCE] flex items-center justify-center text-[#E89A97] shrink-0">
-              <RefreshCw className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="font-serif text-sm font-bold text-[#1F1C1A]">Easy 7-Day Exchange</p>
-              <p className="text-[11px] text-[#7A7169] mt-0.5">Hassle-free size and color swap</p>
-            </div>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-white border border-[#EADBCE]/80 shadow-sm flex items-start gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0">
-              <ShoppingBag className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="font-serif text-sm font-bold text-[#1F1C1A]">Cash on Delivery</p>
-              <p className="text-[11px] text-[#7A7169] mt-0.5">Inspect & pay right at your doorstep</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* SHOP BY CATEGORY */}
+      {/* =========================================================================
+          SECTION 3: NEW ARRIVALS
+          ========================================================================= */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 border-b border-[#EADBCE] pb-4">
           <div>
             <span className="text-xs uppercase tracking-widest font-semibold text-[#B88E3E]">
-              Curated Wardrobe
-            </span>
-            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A] mt-1">
-              Shop By Category
-            </h2>
-          </div>
-          <button
-            onClick={() => onNavigateToShop(null)}
-            className="text-xs font-semibold text-[#B88E3E] hover:underline flex items-center gap-1 mt-2 sm:mt-0"
-          >
-            <span>View All Collections</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2.5 sm:gap-4">
-          {categories.map((cat) => (
-            <div
-              key={cat.id}
-              onClick={() => onNavigateToShop(cat.name)}
-              className="group cursor-pointer flex flex-col items-center text-center space-y-2"
-            >
-              <div className="relative w-full aspect-[3/4] rounded-xl overflow-hidden bg-[#F7F4EE] border border-[#EADBCE] group-hover:border-[#B88E3E] group-hover:shadow-md transition duration-300">
-                <img
-                  src={cat.image || '/assets/aistudio/MARIA.B_ONE_OF_LUXURIOUS_COLLECTION_e659eca1.jpeg'}
-                  alt={cat.name}
-                  className="w-full h-full object-cover object-top transition duration-500 group-hover:scale-108"
-                />
-                <div className="absolute inset-0 bg-black/15 group-hover:bg-black/5 transition" />
-              </div>
-              <span className="font-serif text-[11px] sm:text-xs font-bold text-[#1F1C1A] group-hover:text-[#B88E3E] transition leading-tight">
-                {cat.name}
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* NEW ARRIVALS SPOTLIGHT */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 border-b border-[#EADBCE] pb-4">
-          <div>
-            <span className="text-xs uppercase tracking-widest font-semibold text-[#B88E3E]">
-              Fresh Haute Couture
+              Fresh Haute Couture Drop
             </span>
             <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A] mt-1">
               New Arrivals
@@ -372,208 +317,295 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
           </button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
           {newArrivals.map((product) => (
             <ProductCard key={product.id} product={product} onSelect={onSelectProduct} />
           ))}
         </div>
       </section>
 
-      {/* INTERACTIVE SEASONAL & FESTIVE CURATION (CATCHY SHOWCASE) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 pb-4 border-b border-[#EADBCE] gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FAF8F5] border border-[#B88E3E] text-[10px] font-bold text-[#B88E3E] uppercase tracking-wider mb-1">
-              <Sparkles className="w-3 h-3" />
-              <span>Live Stock Availability</span>
-            </div>
-            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A]">
-              Seasonal Trends & Ready-to-Ship
-            </h2>
-            <p className="text-xs text-[#7A7169] mt-1">
-              Select your preferred season or occasion to view authentic designer pieces in stock.
-            </p>
-          </div>
-
-          {/* Interactive Season Switcher Tabs */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              {[
-                { id: 'all', label: 'All Designs' },
-                { id: 'summer', label: '☀️ Summer Lawn' },
-                { id: 'winter', label: '❄️ Winter Khaddar' },
-                { id: 'formal', label: '👑 Formal & Wedding' },
-                { id: 'sale', label: '🔥 Festive Sale' },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    setActiveSeasonTab(tab.id as any);
-                    setActiveSeasonPiece('All');
-                  }}
-                  className={`py-1.5 px-3 rounded-full text-xs font-semibold transition-all ${
-                    activeSeasonTab === tab.id
-                      ? 'bg-[#1F1C1A] text-white shadow-md'
-                      : 'bg-[#F4EBE1] hover:bg-[#EADBCE] text-[#4A423D]'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Quick 1 Piece, 2 Piece, 3 Piece selector for Summer and Winter */}
-            {(activeSeasonTab === 'summer' || activeSeasonTab === 'winter') && (
-              <div className="flex items-center gap-1.5 bg-[#FAF8F5] p-1 rounded-full border border-[#EADBCE] sm:ml-2">
-                <span className="text-[10px] font-bold text-[#7A7169] uppercase px-2">Piece:</span>
-                {(['All', '1 Piece', '2 Piece', '3 Piece'] as const).map((piece) => (
-                  <button
-                    key={piece}
-                    onClick={() => setActiveSeasonPiece(piece)}
-                    className={`py-1 px-2.5 rounded-full text-[11px] font-semibold transition ${
-                      activeSeasonPiece === piece
-                        ? 'bg-[#B88E3E] text-white shadow-xs'
-                        : 'text-[#5A524C] hover:text-[#1F1C1A]'
-                    }`}
-                  >
-                    {piece}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Tab products grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {tabFilteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} onSelect={onSelectProduct} />
-          ))}
-        </div>
-      </section>
-
-      {/* DEDICATED TROUSERS, PAJAMAS & SHALWAR KAMEEZ SHOWCASE SECTION */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 pb-4 border-b border-[#EADBCE] gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FAF8F5] border border-[#B88E3E] text-[10px] font-bold text-[#B88E3E] uppercase tracking-wider mb-1">
-              <Sparkles className="w-3 h-3 text-[#B88E3E]" />
-              <span>Wardrobe Essentials</span>
-            </div>
-            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A]">
-              Trousers, Pajamas & Shalwar Kameez
-            </h2>
-            <p className="text-xs text-[#7A7169] mt-1">
-              Tailored raw silk cigarette trousers, stretch malai pajamas, traditional pleated shalwars & matching 2PC suits.
-            </p>
-          </div>
-
-          {/* Interactive Bottoms Filter Tabs */}
-          <div className="flex flex-wrap items-center gap-2">
-            {[
-              { id: 'All', label: 'All Essentials' },
-              { id: 'Trousers', label: 'Trousers' },
-              { id: 'Pajamas', label: 'Pajamas' },
-              { id: 'Shalwar', label: 'Shalwars' },
-              { id: 'Shalwar Kameez', label: 'Shalwar Kameez (2PC)' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTrousersTab(tab.id as any)}
-                className={`py-1.5 px-3 rounded-full text-xs font-semibold transition-all ${
-                  activeTrousersTab === tab.id
-                    ? 'bg-[#1F1C1A] text-white shadow-md'
-                    : 'bg-[#F4EBE1] hover:bg-[#EADBCE] text-[#4A423D]'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Trousers & Shalwar Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {trousersShowcaseProducts.map((product) => (
-            <ProductCard key={product.id} product={product} onSelect={onSelectProduct} />
-          ))}
-        </div>
-
-        {/* View full section button */}
-        <div className="text-center mt-6">
-          <button
-            onClick={() => onNavigateToShop('Trousers & Shalwar')}
-            className="inline-flex items-center gap-2 py-2.5 px-6 rounded-xl border border-[#B88E3E] text-[#B88E3E] hover:bg-[#B88E3E] hover:text-white text-xs font-bold uppercase tracking-wider transition shadow-sm"
-          >
-            <span>Explore All Trousers, Pajamas & Shalwar Kameez</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      </section>
-
-      {/* SEASONAL PROMOTIONAL BANNER */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#1F1C1A] via-[#2F2926] to-[#1F1C1A] text-white p-8 sm:p-14 shadow-xl">
-          <div className="relative z-10 max-w-xl space-y-4 text-center sm:text-left">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C5A059] text-[#191715] text-[11px] font-bold uppercase tracking-wider">
-              <Percent className="w-3.5 h-3.5" />
-              <span>Limited Time Festive Offer</span>
-            </div>
-            <h3 className="font-serif text-3xl sm:text-4xl font-bold leading-tight">
-              Up to 40% Off on Signature Embroidered Pret
-            </h3>
-            <p className="text-xs sm:text-sm text-[#D8CCC4] leading-relaxed">
-              Elevate your festive celebrations with royal organza dupattas, banarsi lehngas, and luxury lawn 3-piece suites.
-              Use coupon code <strong className="text-white bg-[#C5A059]/30 px-1.5 py-0.5 rounded">NOOR10</strong> for an additional 10% off at checkout.
-            </p>
-            <div className="pt-2">
-              <button
-                onClick={() => onNavigateToShop('Sale')}
-                className="py-3 px-8 rounded-xl bg-[#C5A059] hover:bg-white hover:text-[#191715] text-[#191715] text-xs font-bold uppercase tracking-wider transition shadow-lg"
-              >
-                Shop The Sale
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* BEST SELLERS & TRENDING */}
+      {/* =========================================================================
+          SECTION 4: CATEGORY IMAGE GRID (EXACT 10 CATEGORIES, MATCHING REFERENCE PICTURE)
+          ========================================================================= */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 border-b border-[#EADBCE] pb-4">
           <div>
             <span className="text-xs uppercase tracking-widest font-semibold text-[#B88E3E]">
-              Customer Favorites
+              Curated Wardrobe • Reference Layout
             </span>
             <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A] mt-1">
-              Best Sellers
+              Shop By Category
             </h2>
           </div>
           <button
             onClick={() => onNavigateToShop(null)}
             className="text-xs font-semibold text-[#B88E3E] hover:underline flex items-center gap-1 mt-2 sm:mt-0"
           >
-            <span>View All</span>
+            <span>View All Collections</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {bestSellers.map((product) => (
+        {/* 2 cols on ultra-small, 3 cols on mobile, 5 cols on desktop/tablet */}
+        <div className="grid grid-cols-2 xs:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-5">
+          {sortedCategories.map((cat, idx) => (
+            <div
+              key={cat.id}
+              onClick={() => onNavigateToShop(cat.name)}
+              className="group cursor-pointer flex flex-col items-center text-center space-y-2.5"
+            >
+              <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden bg-[#F7F4EE] border border-[#EADBCE] group-hover:border-[#B88E3E] group-hover:shadow-lg transition duration-300">
+                <img
+                  src={cat.image || '/assets/aistudio/MARIA.B_ONE_OF_LUXURIOUS_COLLECTION_e659eca1.jpeg'}
+                  alt={cat.name}
+                  className="w-full h-full object-cover object-top transition duration-500 group-hover:scale-108"
+                />
+                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/5 transition" />
+                <span className="absolute top-2 left-2 text-[9px] font-bold bg-white/90 text-[#1F1C1A] px-1.5 py-0.5 rounded shadow-xs opacity-0 group-hover:opacity-100 transition">
+                  #{idx + 1}
+                </span>
+              </div>
+              <span className="font-serif text-xs sm:text-sm font-bold text-[#1F1C1A] group-hover:text-[#B88E3E] transition leading-tight">
+                {cat.name}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 5: FEATURED COLLECTIONS
+          ========================================================================= */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 border-b border-[#EADBCE] pb-4">
+          <div>
+            <span className="text-xs uppercase tracking-widest font-semibold text-[#B88E3E]">
+              Bespoke Pakistani Masterpieces
+            </span>
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A] mt-1">
+              Featured Collections
+            </h2>
+          </div>
+          <button
+            onClick={() => onNavigateToShop(null)}
+            className="text-xs font-semibold text-[#B88E3E] hover:underline flex items-center gap-1 mt-2 sm:mt-0"
+          >
+            <span>View All Featured</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
+          {featuredCollections.map((product) => (
             <ProductCard key={product.id} product={product} onSelect={onSelectProduct} />
           ))}
         </div>
       </section>
 
-      {/* FORMAL & WEDDING LUXURY SHOWCASE */}
+      {/* =========================================================================
+          SECTION 6: STITCHED COLLECTION
+          ========================================================================= */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 border-b border-[#EADBCE] pb-4">
           <div>
             <span className="text-xs uppercase tracking-widest font-semibold text-[#B88E3E]">
-              Royal Wedding Couture
+              Ready-to-Wear Luxury Pret
             </span>
             <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A] mt-1">
-              Formal Wear & Peshwas
+              Stitched Collection
+            </h2>
+          </div>
+          <button
+            onClick={() => onNavigateToShop('Stitched')}
+            className="text-xs font-semibold text-[#B88E3E] hover:underline flex items-center gap-1 mt-2 sm:mt-0"
+          >
+            <span>Explore All Stitched</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
+          {stitchedCollection.map((product) => (
+            <ProductCard key={product.id} product={product} onSelect={onSelectProduct} />
+          ))}
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 7: UNSTITCHED COLLECTION
+          ========================================================================= */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 border-b border-[#EADBCE] pb-4">
+          <div>
+            <span className="text-xs uppercase tracking-widest font-semibold text-[#B88E3E]">
+              Handcrafted Fabrics & Embroidered Necklines
+            </span>
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A] mt-1">
+              Unstitched Collection
+            </h2>
+          </div>
+          <button
+            onClick={() => onNavigateToShop('Unstitched')}
+            className="text-xs font-semibold text-[#B88E3E] hover:underline flex items-center gap-1 mt-2 sm:mt-0"
+          >
+            <span>Explore All Unstitched</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
+          {unstitchedCollection.map((product) => (
+            <ProductCard key={product.id} product={product} onSelect={onSelectProduct} />
+          ))}
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 8: SUMMER WEAR (WITH 1PC, 2PC, 3PC INTERACTIVE SWITCH)
+          ========================================================================= */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 pb-4 border-b border-[#EADBCE] gap-4">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FAF8F5] border border-[#B88E3E] text-[10px] font-bold text-[#B88E3E] uppercase tracking-wider mb-1">
+              <span>☀️ Breathable Luxury Lawn & Schiffli</span>
+            </div>
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A]">
+              Summer Wear
+            </h2>
+            <p className="text-xs text-[#7A7169] mt-0.5">
+              Pure Swiss lawn, schiffli chikankari, and airy organza dupattas for warm weather elegance.
+            </p>
+          </div>
+
+          {/* Quick piece selector for summer */}
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 bg-[#FAF8F5] p-1.5 sm:p-1 rounded-2xl sm:rounded-full border border-[#EADBCE] w-full md:w-auto">
+            <span className="text-[10px] font-bold text-[#7A7169] uppercase px-2">Piece:</span>
+            {(['All', '1 Piece', '2 Piece', '3 Piece'] as const).map((piece) => (
+              <button
+                key={piece}
+                onClick={() => setActiveSummerPiece(piece)}
+                className={`py-1 px-2.5 sm:px-3 rounded-full text-xs font-semibold transition ${
+                  activeSummerPiece === piece
+                    ? 'bg-[#1F1C1A] text-white shadow-xs'
+                    : 'text-[#5A524C] hover:text-[#1F1C1A]'
+                }`}
+              >
+                {piece}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
+          {summerWearFiltered.map((product) => (
+            <ProductCard key={product.id} product={product} onSelect={onSelectProduct} />
+          ))}
+        </div>
+
+        <div className="text-center mt-6">
+          <button
+            onClick={() => onNavigateToShop('Summer Wear')}
+            className="inline-flex items-center gap-1.5 py-2.5 px-6 rounded-xl border border-[#B88E3E] text-[#B88E3E] hover:bg-[#B88E3E] hover:text-white text-xs font-bold uppercase tracking-wider transition"
+          >
+            <span>Explore All Summer Wear</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 9: WINTER WEAR (WITH 1PC, 2PC, 3PC INTERACTIVE SWITCH)
+          ========================================================================= */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 pb-4 border-b border-[#EADBCE] gap-4">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FAF8F5] border border-[#B88E3E] text-[10px] font-bold text-[#B88E3E] uppercase tracking-wider mb-1">
+              <span>❄️ Warm Karandi & Morashi Khaddar</span>
+            </div>
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A]">
+              Winter Wear
+            </h2>
+            <p className="text-xs text-[#7A7169] mt-0.5">
+              Heavy rice karandi, printed khaddar, and plush velvet shawls tailored for seasonal warmth.
+            </p>
+          </div>
+
+          {/* Quick piece selector for winter */}
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 bg-[#FAF8F5] p-1.5 sm:p-1 rounded-2xl sm:rounded-full border border-[#EADBCE] w-full md:w-auto">
+            <span className="text-[10px] font-bold text-[#7A7169] uppercase px-2">Piece:</span>
+            {(['All', '1 Piece', '2 Piece', '3 Piece'] as const).map((piece) => (
+              <button
+                key={piece}
+                onClick={() => setActiveWinterPiece(piece)}
+                className={`py-1 px-2.5 sm:px-3 rounded-full text-xs font-semibold transition ${
+                  activeWinterPiece === piece
+                    ? 'bg-[#1F1C1A] text-white shadow-xs'
+                    : 'text-[#5A524C] hover:text-[#1F1C1A]'
+                }`}
+              >
+                {piece}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
+          {winterWearFiltered.map((product) => (
+            <ProductCard key={product.id} product={product} onSelect={onSelectProduct} />
+          ))}
+        </div>
+
+        <div className="text-center mt-6">
+          <button
+            onClick={() => onNavigateToShop('Winter Wear')}
+            className="inline-flex items-center gap-1.5 py-2.5 px-6 rounded-xl border border-[#B88E3E] text-[#B88E3E] hover:bg-[#B88E3E] hover:text-white text-xs font-bold uppercase tracking-wider transition"
+          >
+            <span>Explore All Winter Wear</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 10: CASUAL WEAR
+          ========================================================================= */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 border-b border-[#EADBCE] pb-4">
+          <div>
+            <span className="text-xs uppercase tracking-widest font-semibold text-[#B88E3E]">
+              Effortless Everyday Ensembles
+            </span>
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A] mt-1">
+              Casual Wear
+            </h2>
+          </div>
+          <button
+            onClick={() => onNavigateToShop('Casual Wear')}
+            className="text-xs font-semibold text-[#B88E3E] hover:underline flex items-center gap-1 mt-2 sm:mt-0"
+          >
+            <span>Explore Casual Wear</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
+          {casualWear.map((product) => (
+            <ProductCard key={product.id} product={product} onSelect={onSelectProduct} />
+          ))}
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 11: FORMAL WEAR
+          ========================================================================= */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 border-b border-[#EADBCE] pb-4">
+          <div>
+            <span className="text-xs uppercase tracking-widest font-semibold text-[#B88E3E]">
+              Regal Peshwas &amp; Festive Chiffon
+            </span>
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A] mt-1">
+              Formal Wear
             </h2>
           </div>
           <button
@@ -585,17 +617,164 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
           </button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
           {formalWear.map((product) => (
             <ProductCard key={product.id} product={product} onSelect={onSelectProduct} />
           ))}
         </div>
       </section>
 
-      {/* CUSTOMER TESTIMONIALS */}
-      <section className="bg-[#F7F4EE] py-16 border-y border-[#EADBCE]">
+      {/* =========================================================================
+          SECTION 12: WEDDING WEAR
+          ========================================================================= */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 border-b border-[#EADBCE] pb-4">
+          <div>
+            <span className="text-xs uppercase tracking-widest font-semibold text-[#B88E3E]">
+              Bridal Lehengas &amp; Handcrafted Adda Work
+            </span>
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A] mt-1">
+              Wedding Wear
+            </h2>
+          </div>
+          <button
+            onClick={() => onNavigateToShop('Wedding Wear')}
+            className="text-xs font-semibold text-[#B88E3E] hover:underline flex items-center gap-1 mt-2 sm:mt-0"
+          >
+            <span>Explore Wedding Wear</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
+          {weddingWear.map((product) => (
+            <ProductCard key={product.id} product={product} onSelect={onSelectProduct} />
+          ))}
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 13: BOTTOMS (TROUSERS, PAJAMAS, SHALWAR & SHALWAR KAMEEZ)
+          ========================================================================= */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 pb-4 border-b border-[#EADBCE] gap-4">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FAF8F5] border border-[#B88E3E] text-[10px] font-bold text-[#B88E3E] uppercase tracking-wider mb-1">
+              <Sparkles className="w-3 h-3 text-[#B88E3E]" />
+              <span>Wardrobe Essentials</span>
+            </div>
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1F1C1A]">
+              Bottoms
+            </h2>
+            <p className="text-xs text-[#7A7169] mt-0.5">
+              Tailored raw silk trousers, stretch cotton pajamas, traditional pleated shalwars &amp; matching 2PC suits.
+            </p>
+          </div>
+        </div>
+
+        {bottomsCollection.length === 0 ? (
+          <div className="p-6 sm:p-12 text-center rounded-2xl bg-[#FAF8F5] border border-[#EADBCE] space-y-3">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#B88E3E] bg-white px-3 py-1 rounded-full border border-[#EADBCE]">
+              Uploading Soon
+            </span>
+            <h3 className="font-serif text-lg sm:text-2xl font-bold text-[#1F1C1A]">
+              Exclusive Bottoms Collection Pictures Dropping Soon
+            </h3>
+            <p className="text-xs text-[#7A7169] max-w-md mx-auto">
+              Hamari nayi Bottoms collection ki pictures aur tailored silhouettes jald yahan upload ki jaayengi.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
+            {bottomsCollection.map((product) => (
+              <ProductCard key={product.id} product={product} onSelect={onSelectProduct} />
+            ))}
+          </div>
+        )}
+
+        <div className="text-center mt-6">
+          <button
+            onClick={() => onNavigateToShop('Bottoms')}
+            className="inline-flex items-center gap-1.5 py-2.5 px-6 rounded-xl border border-[#B88E3E] text-[#B88E3E] hover:bg-[#B88E3E] hover:text-white text-xs font-bold uppercase tracking-wider transition"
+          >
+            <span>Explore All Bottoms</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 14: SALE COLLECTION
+          ========================================================================= */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#1F1C1A] via-[#2F2926] to-[#1F1C1A] text-white p-6 sm:p-10 lg:p-12 shadow-xl">
+          <div className="relative z-10 max-w-xl space-y-3.5 text-center sm:text-left">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C5A059] text-[#191715] text-[11px] font-bold uppercase tracking-wider">
+              <Percent className="w-3.5 h-3.5" />
+              <span>Limited Time Festive Offer</span>
+            </div>
+            <h3 className="font-serif text-2xl sm:text-4xl font-bold leading-tight">
+              Up to 40% Off on Signature Embroidered Pret
+            </h3>
+            <p className="text-xs sm:text-sm text-[#D8CCC4] leading-relaxed">
+              Elevate your festive celebrations with royal organza dupattas, banarsi lehngas, and luxury lawn 3-piece suites.
+              Use coupon code <strong className="text-white bg-[#C5A059]/30 px-1.5 py-0.5 rounded">NOOR10</strong> for an additional 10% off at checkout.
+            </p>
+            <div className="pt-2">
+              <button
+                onClick={() => onNavigateToShop('Sale')}
+                className="w-full sm:w-auto py-3 px-8 rounded-xl bg-[#C5A059] hover:bg-white hover:text-[#191715] text-[#191715] text-xs font-bold uppercase tracking-wider transition shadow-lg"
+              >
+                Shop The Sale
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 15: ABOUT NOOR STUDIO
+          ========================================================================= */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="p-6 sm:p-10 lg:p-12 rounded-3xl bg-white border border-[#EADBCE] shadow-sm space-y-8 sm:space-y-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            <div className="lg:col-span-7 space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FAF8F5] border border-[#EADBCE] text-xs font-bold text-[#B88E3E] uppercase tracking-wider">
+                <Award className="w-3.5 h-3.5" />
+                <span>About NOOR STUDIO</span>
+              </div>
+              <h3 className="font-serif text-2xl sm:text-4xl font-bold text-[#1F1C1A] leading-tight">
+                Crafting Timeless Pakistani Couture with Modern Grace
+              </h3>
+              <p className="text-xs sm:text-sm text-[#5A524C] leading-relaxed">
+                Founded with a passionate reverence for traditional Pakistani craftsmanship, NOOR STUDIO marries centuries-old zardozi embroidery and delicate adda work with contemporary silhouettes. From breathable Summer Swiss lawns to rich Winter Morashi khaddars, each garment is stitched to perfection with strict attention to fabric grain, color harmony, and comfort.
+              </p>
+              <div className="pt-2 flex flex-wrap gap-4 text-xs font-medium text-[#7A7169]">
+                <span>✓ 100% Genuine Fabrics</span>
+                <span>✓ Verified PostEx Courier COD</span>
+                <span>✓ Dedicated Helpline: 03284454746</span>
+              </div>
+            </div>
+
+            <div className="lg:col-span-5 flex justify-center">
+              <div className="relative w-full max-w-xs aspect-square rounded-2xl overflow-hidden border-4 border-[#FAF8F5] shadow-lg">
+                <img
+                  src="/assets/aistudio/Fabric__Chiffon___Malai__4__577f7568.jpeg"
+                  alt="NOOR STUDIO Artisanal Craftsmanship"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          SECTION 16: CUSTOMER TESTIMONIALS
+          ========================================================================= */}
+      <section className="bg-[#F7F4EE] py-10 sm:py-14 border-y border-[#EADBCE]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center space-y-2 mb-10">
+          <div className="text-center space-y-2 mb-8 sm:mb-10">
             <span className="text-xs uppercase tracking-widest font-semibold text-[#B88E3E]">
               Loved by Women Nationwide
             </span>
@@ -604,8 +783,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
             </h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 rounded-2xl bg-white border border-[#EADBCE] shadow-sm space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+            <div className="p-5 sm:p-6 rounded-2xl bg-white border border-[#EADBCE] shadow-sm space-y-3">
               <div className="flex items-center gap-1">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
@@ -621,7 +800,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
               </div>
             </div>
 
-            <div className="p-6 rounded-2xl bg-white border border-[#EADBCE] shadow-sm space-y-3">
+            <div className="p-5 sm:p-6 rounded-2xl bg-white border border-[#EADBCE] shadow-sm space-y-3">
               <div className="flex items-center gap-1">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
@@ -637,7 +816,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
               </div>
             </div>
 
-            <div className="p-6 rounded-2xl bg-white border border-[#EADBCE] shadow-sm space-y-3">
+            <div className="p-5 sm:p-6 rounded-2xl bg-white border border-[#EADBCE] shadow-sm space-y-3">
               <div className="flex items-center gap-1">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
@@ -656,44 +835,46 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
         </div>
       </section>
 
-      {/* INSTAGRAM / LOOKBOOK GRID */}
+      {/* =========================================================================
+          SECTION 17: NEWSLETTER
+          ========================================================================= */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center space-y-2 mb-8">
-          <span className="text-xs uppercase tracking-widest font-semibold text-[#B88E3E]">
-            @noorstudio.pk on Instagram
-          </span>
-          <h3 className="font-serif text-2xl font-bold text-[#1F1C1A]">Styled by You</h3>
-        </div>
+        <div className="p-6 sm:p-10 lg:p-12 rounded-3xl bg-[#1F1C1A] text-white shadow-xl text-center space-y-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#C5A059]/20 border border-[#C5A059]/40 text-[11px] font-bold text-[#EADBCE] uppercase tracking-wider">
+            <Mail className="w-3.5 h-3.5 text-[#C5A059]" />
+            <span>NOOR STUDIO VIP Club</span>
+          </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100 shadow-sm group">
-            <img
-              src="/assets/aistudio/MOST_ELEGANT_OUTFITT_BY_IZNIK__3__b0971e8e.jpeg"
-              alt="NOOR STUDIO Iznik Chiffon"
-              className="w-full h-full object-cover object-top transition duration-500 group-hover:scale-105"
-            />
-          </div>
-          <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100 shadow-sm group">
-            <img
-              src="/assets/aistudio/Zesh_Essential_Co-ord_Printed_Silk_2PC_f1593680.jpeg"
-              alt="NOOR STUDIO Silk Co-Ord"
-              className="w-full h-full object-cover object-top transition duration-500 group-hover:scale-105"
-            />
-          </div>
-          <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100 shadow-sm group">
-            <img
-              src="/assets/aistudio/MARIA_B_COUTURE_COLLECTION_48007866.jpeg"
-              alt="NOOR STUDIO Maria.B Couture"
-              className="w-full h-full object-cover object-top transition duration-500 group-hover:scale-105"
-            />
-          </div>
-          <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100 shadow-sm group">
-            <img
-              src="/assets/aistudio/SILK_COLLECTION_2026_e0cd6ab7.jpeg"
-              alt="NOOR STUDIO Silk Pret"
-              className="w-full h-full object-cover object-top transition duration-500 group-hover:scale-105"
-            />
-          </div>
+          <h3 className="font-serif text-2xl sm:text-4xl font-bold max-w-xl mx-auto leading-tight">
+            Subscribe for First Access to Festive Collections & Private Markdowns
+          </h3>
+          <p className="text-xs sm:text-sm text-[#D8CCC4] max-w-md mx-auto">
+            Join thousands of discerning women. Enjoy 10% off your first luxury order with code <strong>NOOR10</strong>.
+          </p>
+
+          {newsletterSubscribed ? (
+            <div className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-900/60 border border-emerald-500 text-emerald-200 text-xs font-semibold animate-fadeIn">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span>Thank you for subscribing! Your 10% off code <strong>NOOR10</strong> is active.</span>
+            </div>
+          ) : (
+            <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto pt-2">
+              <input
+                type="email"
+                required
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
+                placeholder="Enter your email address..."
+                className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 text-xs focus:outline-none focus:border-[#C5A059]"
+              />
+              <button
+                type="submit"
+                className="py-3 px-6 rounded-xl bg-[#C5A059] hover:bg-white text-[#191715] text-xs font-bold uppercase tracking-wider transition shadow-md shrink-0"
+              >
+                Join VIP Club
+              </button>
+            </form>
+          )}
         </div>
       </section>
     </div>

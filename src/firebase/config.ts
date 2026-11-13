@@ -1,13 +1,35 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import {
+  getFirestore,
+  initializeFirestore,
+  doc,
+  getDocFromServer,
+  Firestore,
+} from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-/* CRITICAL: The app will break without this line */
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+/* CRITICAL: The app will break without the firestoreDatabaseId argument.
+   Use experimentalForceLongPolling to avoid WebChannel 10-second stream timeouts in sandboxed/proxy browsers. */
+function createFirestoreDb(): Firestore {
+  try {
+    return initializeFirestore(
+      app,
+      {
+        experimentalForceLongPolling: true,
+        ignoreUndefinedProperties: true,
+      },
+      firebaseConfig.firestoreDatabaseId
+    );
+  } catch {
+    return getFirestore(app, firebaseConfig.firestoreDatabaseId);
+  }
+}
+
+export const db = createFirestoreDb();
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
@@ -61,7 +83,7 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 // Validate Connection on Boot
 async function testConnection() {
   try {
-    await getDoc(doc(db, 'test', 'connection'));
+    await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
     if (error instanceof Error && error.message.includes('the client is offline')) {
       console.warn('Firebase connection check: client is offline or network restricted.');
