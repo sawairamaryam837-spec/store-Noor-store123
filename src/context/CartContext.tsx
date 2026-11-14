@@ -146,7 +146,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const applyCoupon = (code: string) => {
-    const clean = code.trim().toUpperCase();
+    const clean = code.trim().replace(/\s+/g, ' ').toUpperCase();
     const found = INITIAL_COUPONS.find((c) => c.code === clean && c.isActive);
     if (!found) {
       return { success: false, message: 'Invalid or expired coupon code.' };

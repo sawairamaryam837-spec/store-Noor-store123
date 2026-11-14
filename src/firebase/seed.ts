@@ -114,7 +114,7 @@ export const INITIAL_CATEGORIES: Category[] = [
 
 export const INITIAL_COUPONS: Coupon[] = [
   {
-    code: 'NOOR10',
+    code: 'NOOR STUDIO',
     type: 'percentage',
     value: 10,
     minSpend: 3000,

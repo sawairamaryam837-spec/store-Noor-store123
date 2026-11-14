@@ -208,7 +208,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
                 <form onSubmit={handleApplyCoupon} className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="Coupon Code (e.g. NOOR10)"
+                    placeholder="Coupon Code (e.g. NOOR STUDIO)"
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value)}
                     className="min-w-0 flex-1 px-3 py-2 rounded-lg border border-[#D9CCC2] text-xs uppercase placeholder:normal-case focus:outline-none focus:border-[#B88E3E]"

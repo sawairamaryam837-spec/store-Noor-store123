@@ -167,7 +167,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
       <div className="bg-gradient-to-r from-[#1F1C1A] via-[#332A26] to-[#1F1C1A] text-[#F3EFEA] py-2 px-3 sm:px-4 text-center text-[11px] sm:text-xs font-medium border-b border-[#C5A059]/40 flex items-center justify-center gap-2">
         <span className="inline-block w-2 h-2 rounded-full bg-[#25D366] animate-pulse shrink-0" />
         <span className="leading-snug">
-          <strong>RAMADAN &amp; FESTIVE EXHIBITION:</strong> Free PostEx Courier COD nationwide on orders above Rs. 3,500. Use code <span className="bg-[#C5A059] text-black px-1.5 py-0.5 rounded font-bold inline-block">NOOR10</span> for extra 10% off!
+          <strong>RAMADAN &amp; FESTIVE EXHIBITION:</strong> Free PostEx Courier COD nationwide on orders above Rs. 3,500. Use code <span className="bg-[#C5A059] text-black px-1.5 py-0.5 rounded font-bold inline-block">NOOR STUDIO</span> for extra 10% off!
         </span>
       </div>
 
@@ -718,7 +718,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
             </h3>
             <p className="text-xs sm:text-sm text-[#D8CCC4] leading-relaxed">
               Elevate your festive celebrations with royal organza dupattas, banarsi lehngas, and luxury lawn 3-piece suites.
-              Use coupon code <strong className="text-white bg-[#C5A059]/30 px-1.5 py-0.5 rounded">NOOR10</strong> for an additional 10% off at checkout.
+              Use coupon code <strong className="text-white bg-[#C5A059]/30 px-1.5 py-0.5 rounded">NOOR STUDIO</strong> for an additional 10% off at checkout.
             </p>
             <div className="pt-2">
               <button
@@ -849,13 +849,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
             Subscribe for First Access to Festive Collections & Private Markdowns
           </h3>
           <p className="text-xs sm:text-sm text-[#D8CCC4] max-w-md mx-auto">
-            Join thousands of discerning women. Enjoy 10% off your first luxury order with code <strong>NOOR10</strong>.
+            Join thousands of discerning women. Enjoy 10% off your first luxury order with code <strong>NOOR STUDIO</strong>.
           </p>
 
           {newsletterSubscribed ? (
             <div className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-900/60 border border-emerald-500 text-emerald-200 text-xs font-semibold animate-fadeIn">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>Thank you for subscribing! Your 10% off code <strong>NOOR10</strong> is active.</span>
+              <span>Thank you for subscribing! Your 10% off code <strong>NOOR STUDIO</strong> is active.</span>
             </div>
           ) : (
             <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto pt-2">

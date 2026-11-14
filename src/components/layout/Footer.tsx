@@ -240,7 +240,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             {newsletterSubscribed ? (
               <div className="p-3 bg-[#262220] rounded border border-[#C5A059] text-xs text-[#EADBCE]">
                 <p className="font-semibold text-white">Thank you for subscribing!</p>
-                <p className="mt-1">Use coupon code <span className="text-[#C5A059] font-bold">NOOR10</span> at checkout for 10% off.</p>
+                <p className="mt-1">Use coupon code <span className="text-[#C5A059] font-bold">NOOR STUDIO</span> at checkout for 10% off.</p>
               </div>
             ) : (
               <form onSubmit={handleNewsletterSubmit} className="space-y-2">
