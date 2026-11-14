@@ -2,14 +2,14 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Default deny all
+    // Global default deny safety net
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // Helper functions
+    // Core helper primitives
     function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
     function incoming() {
@@ -24,11 +24,38 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Strict verified admin token check (safe for O(1) list queries without DB lookups)
+    function isAdminToken() {
+      return isSignedIn() &&
+        request.auth.token.email == 'noorstudio16mpa@gmail.com' &&
+        (
+          request.auth.token.email_verified == true ||
+          request.auth.token.admin == true
+        );
+    }
+
+    // Full admin verification for single-document reads and writes
     function isAdmin() {
-      return isSignedIn() && (
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        (request.auth.token.email == 'sawairamaryam837@gmail.com' && request.auth.token.email_verified == true)
+      return isAdminToken() || (
+        isSignedIn() &&
+        request.auth.token.email == 'noorstudio16mpa@gmail.com' &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'phone', 'role', 'createdAt']) &&
+             data.keys().hasOnly(['uid', 'name', 'email', 'phone', 'role', 'address', 'city', 'postalCode', 'createdAt', 'updatedAt']) &&
+             data.uid is string && data.uid.size() > 0 && data.uid.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 120 &&
+             data.email is string && data.email.size() > 2 && data.email.size() <= 160 &&
+             data.phone is string && data.phone.size() <= 30 &&
+             data.role is string && data.role in ['customer', 'admin'] &&
+             data.createdAt is string && data.createdAt.size() > 0 && data.createdAt.size() <= 64 &&
+             (!('address' in data) || (data.address is string && data.address.size() <= 500)) &&
+             (!('city' in data) || (data.city is string && data.city.size() <= 80)) &&
+             (!('postalCode' in data) || (data.postalCode is string && data.postalCode.size() <= 20)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
     }
 
     function isValidProduct(data) {
@@ -46,30 +73,49 @@ service cloud.firestore {
     }
 
     function isValidOrder(data) {
-      return data.orderNumber is string && data.orderNumber.size() <= 50 &&
+      return data.keys().hasAll(['orderNumber', 'customer', 'items', 'subtotal', 'total', 'paymentMethod', 'orderStatus']) &&
+             data.orderNumber is string && data.orderNumber.size() > 0 && data.orderNumber.size() <= 50 &&
              data.customer is map &&
              data.items is list && data.items.size() > 0 && data.items.size() <= 50 &&
              data.subtotal is number && data.subtotal >= 0 &&
              data.total is number && data.total >= 0 &&
-             data.paymentMethod is string && data.paymentMethod.size() <= 50 &&
-             data.orderStatus is string && data.orderStatus.size() <= 50;
-    }
-
-    function isValidCart(data) {
-      return data.userId is string && data.userId.size() <= 128 &&
-             data.items is list && data.items.size() <= 100;
-    }
-
-    function isValidWishlist(data) {
-      return data.userId is string && data.userId.size() <= 128 &&
-             data.productIds is list && data.productIds.size() <= 200;
+             data.paymentMethod is string && data.paymentMethod.size() > 0 && data.paymentMethod.size() <= 50 &&
+             data.orderStatus is string && data.orderStatus in ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'] &&
+             (!('userId' in data) || (data.userId is string && data.userId.size() <= 128)) &&
+             (!('customerId' in data) || (data.customerId is string && data.customerId.size() <= 128)) &&
+             (!('customerName' in data) || (data.customerName is string && data.customerName.size() <= 120)) &&
+             (!('customerEmail' in data) || (data.customerEmail is string && data.customerEmail.size() <= 160)) &&
+             (!('phone' in data) || (data.phone is string && data.phone.size() <= 30)) &&
+             (!('shippingAddress' in data) || (data.shippingAddress is string && data.shippingAddress.size() <= 500)) &&
+             (!('totalAmount' in data) || (data.totalAmount is number && data.totalAmount >= 0));
     }
 
     function isValidReview(data) {
-      return data.productId is string && data.productId.size() <= 128 &&
-             data.authorName is string && data.authorName.size() <= 100 &&
+      return data.productId is string && data.productId.size() > 0 && data.productId.size() <= 128 &&
+             data.authorName is string && data.authorName.size() > 0 && data.authorName.size() <= 100 &&
              data.rating is number && data.rating >= 1 && data.rating <= 5 &&
-             data.comment is string && data.comment.size() <= 2000;
+             data.comment is string && data.comment.size() > 0 && data.comment.size() <= 2000;
+    }
+
+    // Users collection: strict PII isolation and role immutability
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isAdmin() || (isSignedIn() && request.auth.uid == userId));
+      allow list: if isAdminToken() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow create: if isValidId(userId) && isValidUser(incoming()) && (
+        (isAdmin() && incoming().uid == userId) ||
+        (isSignedIn() && request.auth.uid == userId && incoming().uid == request.auth.uid && incoming().role == 'customer')
+      );
+      allow update: if isValidId(userId) && isValidUser(incoming()) && (
+        isAdmin() ||
+        (isSignedIn() &&
+         request.auth.uid == userId &&
+         incoming().uid == existing().uid &&
+         incoming().role == existing().role &&
+         incoming().email == existing().email &&
+         incoming().createdAt == existing().createdAt &&
+         incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'address', 'city', 'postalCode', 'updatedAt']))
+      );
+      allow delete: if isAdmin() && isValidId(userId);
     }
 
     // Products collection: public read, admin write
@@ -86,24 +132,35 @@ service cloud.firestore {
       allow delete: if isAdmin() && isValidId(categoryId);
     }
 
-    // Orders collection: creation by customers/guests, read by ID or owner or admin, fulfillment status & tracking update
+    // Orders collection: strict customer isolation; only admins can list all, update status, or delete
     match /orders/{orderId} {
-      allow create: if isValidId(orderId) && isValidOrder(incoming());
-      allow get: if isValidId(orderId);
-      allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-      allow update: if isValidId(orderId) && (
-        isAdmin() ||
-        (isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['trackingNumber', 'courier', 'orderStatus', 'updatedAt']))
+      allow create: if isValidId(orderId) && isValidOrder(incoming()) && incoming().orderStatus == 'Pending' && (
+        (!isSignedIn() && !('userId' in incoming()) && !('customerId' in incoming()) && incoming().isGuest == true) ||
+        (isSignedIn() && incoming().userId == request.auth.uid && (!('customerId' in incoming()) || incoming().customerId == request.auth.uid))
       );
-      allow delete: if isAdmin() && isValidId(orderId);
+      allow get: if isValidId(orderId) && (
+        isAdmin() ||
+        (isSignedIn() && (
+          existing().userId == request.auth.uid ||
+          ('customerId' in existing() && existing().customerId == request.auth.uid)
+        ))
+      );
+      allow list: if isAdminToken() || (
+        isSignedIn() && (
+          resource.data.userId == request.auth.uid ||
+          resource.data.customerId == request.auth.uid
+        )
+      );
+      allow update: if isValidId(orderId) && isAdmin() && isValidOrder(incoming());
+      allow delete: if isValidId(orderId) && isAdmin();
     }
 
-    // Cart collection: owned by authenticated user or admin
+    // Cart collection: strictly owned by authenticated user or admin
     match /carts/{userId} {
       allow read, write: if isValidId(userId) && ((isSignedIn() && request.auth.uid == userId) || isAdmin());
     }
 
-    // Wishlist collection: owned by authenticated user or admin
+    // Wishlist collection: strictly owned by authenticated user or admin
     match /wishlists/{userId} {
       allow read, write: if isValidId(userId) && ((isSignedIn() && request.auth.uid == userId) || isAdmin());
     }
@@ -114,10 +171,10 @@ service cloud.firestore {
       allow write: if isAdmin() && isValidId(settingId);
     }
 
-    // Reviews: public read, authenticated create, admin delete
+    // Reviews: public read, authenticated create, admin update/delete
     match /reviews/{reviewId} {
       allow read: if true;
-      allow create: if isSignedIn() && isValidId(reviewId) && isValidReview(incoming());
+      allow create: if isSignedIn() && isValidId(reviewId) && isValidReview(incoming()) && (!('userId' in incoming()) || incoming().userId == request.auth.uid);
       allow update, delete: if isAdmin() && isValidId(reviewId);
     }
 
@@ -126,9 +183,10 @@ service cloud.firestore {
       allow read: if true;
     }
 
-    // Admins registry: read by signed in users, write by existing admins
+    // Admins registry: readable only by self or verified admins; writable only by verified admins
     match /admins/{adminId} {
-      allow read: if isSignedIn() && isValidId(adminId);
+      allow get: if isValidId(adminId) && (isAdmin() || (isSignedIn() && request.auth.uid == adminId));
+      allow list: if isAdminToken();
       allow write: if isAdmin() && isValidId(adminId);
     }
   }

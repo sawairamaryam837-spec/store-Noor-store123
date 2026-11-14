@@ -8,9 +8,6 @@ import {
   X,
   Phone,
   ChevronDown,
-  Sparkles,
-  ShieldCheck,
-  Truck,
   ArrowRight,
 } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
@@ -41,7 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { totalItems, setIsCartOpen } = useCart();
   const { wishlistIds } = useWishlist();
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const { settings } = useStore();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -91,19 +88,6 @@ export const Header: React.FC<HeaderProps> = ({
             >
               Track Order
             </button>
-            {isAdmin && (
-              <>
-                <span className="text-[#555]">|</span>
-                <button
-                  onClick={() => handleNavClick('admin')}
-                  className="px-2.5 py-0.5 rounded-full bg-[#C5A059] text-[#191715] hover:bg-white text-[11px] font-bold flex items-center gap-1 transition shadow-sm whitespace-nowrap"
-                  title="Open Admin Dashboard"
-                >
-                  <ShieldCheck className="w-3 h-3 text-[#191715]" />
-                  <span>Admin Portal</span>
-                </button>
-              </>
-            )}
           </div>
         </div>
       </div>
@@ -162,18 +146,6 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Action Icons */}
           <div className="flex items-center gap-1 xs:gap-2 sm:gap-4 shrink-0">
-            {/* Admin Panel Button - Only visible to authorized administrators */}
-            {isAdmin && (
-              <button
-                onClick={() => handleNavClick('admin')}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1F1C1A] text-[#FAF8F5] hover:bg-[#B88E3E] text-xs font-semibold shadow-sm border border-[#C5A059]/40 transition group whitespace-nowrap"
-                title="Open NOOR STUDIO Admin Dashboard"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-[#E89A97] group-hover:scale-110 transition-transform" />
-                <span>Admin Panel</span>
-              </button>
-            )}
-
             {/* Account */}
             <button
               onClick={() => {
@@ -407,42 +379,12 @@ export const Header: React.FC<HeaderProps> = ({
           >
             Contact Us
           </button>
-
-          {/* Admin link strictly for verified admins */}
-          {isAdmin && (
-            <button
-              onClick={() => handleNavClick('admin')}
-              className={`hover:text-[#B88E3E] transition py-1 relative flex items-center gap-1 font-bold text-[#B88E3E] whitespace-nowrap ${
-                currentView === 'admin' ? 'after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-[#B88E3E]' : ''
-              }`}
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Admin</span>
-            </button>
-          )}
         </nav>
       </div>
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-[#EADBCE] bg-[#FAF8F5] px-4 sm:px-6 py-4 sm:py-5 space-y-4 max-h-[82vh] overflow-y-auto animate-fadeIn">
-          {/* Admin Portal Banner - ONLY for verified administrators */}
-          {isAdmin && (
-            <div className="pb-3 border-b border-[#EADBCE]">
-              <button
-                onClick={() => handleNavClick('admin')}
-                className="w-full py-2.5 px-3.5 rounded-xl bg-[#1F1C1A] text-white hover:bg-[#B88E3E] text-xs font-bold flex items-center justify-between shadow-sm transition"
-              >
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#E89A97]" />
-                  <span>Admin Panel & Orders</span>
-                </div>
-                <span className="text-[10px] bg-[#C5A059] text-[#191715] px-2 py-0.5 rounded font-bold uppercase">
-                  Manage
-                </span>
-              </button>
-            </div>
-          )}
 
           <div className="space-y-1 text-sm font-medium uppercase tracking-wider text-[#1F1C1A]">
             <button
@@ -614,17 +556,6 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Contact Us</span>
               <ArrowRight className="w-4 h-4 text-[#A89D93]" />
             </button>
-
-            {/* Mobile Admin Link ONLY for authorized admins */}
-            {isAdmin && (
-              <button
-                onClick={() => handleNavClick('admin')}
-                className="w-full text-left py-2.5 min-h-[42px] border-b border-[#EADBCE]/50 flex justify-between items-center text-[#B88E3E] font-bold"
-              >
-                <span>Admin Dashboard</span>
-                <ShieldCheck className="w-4 h-4" />
-              </button>
-            )}
           </div>
 
           <div className="pt-4 border-t border-[#EADBCE] text-xs text-[#6F665F] space-y-2">

@@ -3,23 +3,25 @@
 ## 1. Data Invariants
 1. **Public Catalog Readability**: Products, Categories, and StoreSettings are readable by any client (guest or authenticated) to enable browsing and store discovery.
 2. **Catalog Write Protection**: Only verified administrators (`isAdmin()`) can create, update, or delete Products, Categories, and StoreSettings.
-3. **Order Placement Invariant**: Anyone (guest or authenticated customer) can place an order provided the order payload conforms to required fields, realistic positive amounts, and initial status is 'Pending'.
-4. **Order Read Protection**: Orders can only be read by the user who placed them (`resource.data.userId == request.auth.uid`), or by an authorized administrator (`isAdmin()`).
-5. **Order Update Protection**: Customers cannot alter pricing, shipping, or items after creation. Only admins can update order status (e.g., Pending -> Confirmed -> Shipped -> Delivered).
-6. **Cart & Wishlist Isolation**: Carts and Wishlists at `/carts/{userId}` and `/wishlists/{userId}` can ONLY be read or written by the matching authenticated owner (`request.auth.uid == userId`) or an admin.
-7. **Reviews**: Authenticated users can submit product reviews with valid ratings between 1 and 5.
-8. **Admin Privilege Guard**: Admin records at `/admins/{adminId}` can only be modified by existing verified admins. Bootstrapped admin email `sawairamaryam837@gmail.com` is granted administrative access.
+3. **User Profile Privacy & Role Immutability**: Documents at `/users/{userId}` can ONLY be read or updated by the owning user (`request.auth.uid == userId`) or a verified administrator (`isAdmin()`). Self-registration strictly enforces `role == 'customer'` and `uid == request.auth.uid`. Customers can NEVER change `role`, `uid`, `email`, or `createdAt`.
+4. **Order Placement Invariant**: Authenticated customers can place orders where `userId == request.auth.uid` (and `customerId == request.auth.uid`) with initial `orderStatus == 'Pending'`. Guest checkout sets `isGuest == true` with no forged `userId`/`customerId`.
+5. **Order Read Protection**: Orders at `/orders/{orderId}` can ONLY be read (`get` or `list`) by the owning customer (`resource.data.userId == request.auth.uid` or `resource.data.customerId == request.auth.uid`) or by a verified administrator (`isAdmin()`). Unauthenticated users and other customers can NEVER read or list another customer's order PII.
+6. **Order Update Protection**: Customers cannot alter pricing, items, tracking, or order statuses after creation. Only verified administrators can update or delete orders.
+7. **Cart & Wishlist Isolation**: Carts and Wishlists at `/carts/{userId}` and `/wishlists/{userId}` can ONLY be read or written by the matching authenticated owner (`request.auth.uid == userId`) or a verified administrator.
+8. **Reviews**: Authenticated users can submit product reviews with valid ratings between 1 and 5.
+9. **Admin Privilege Guard**: Admin records at `/admins/{adminId}` can only be listed or modified by verified administrators. Administrative access is strictly restricted to the authorized administrator email `noorstudio16mpa@gmail.com` with `email_verified == true` (verified both in Firestore Rules and cryptographically on the Express backend via Firebase ID tokens / Custom Claims).
+10. **Zero Frontend Admin Exposure**: No admin login links, dashboard navigation buttons, demo admin accounts, or admin email hints are displayed anywhere on the customer-facing storefront.
 
 ## 2. Dirty Dozen Threat Payloads
-1. **Unauthenticated Price Tampering**: An unauthenticated user attempts to update product price from 8990 to 1 -> DENIED.
-2. **Customer Self-Discount Order**: Customer updates order total after placement -> DENIED.
-3. **Cart Snooping**: User A attempts to read User B's cart at `/carts/userB` -> DENIED.
-4. **Wishlist Hijacking**: User A attempts to overwrite User B's wishlist -> DENIED.
-5. **Unauthorized Status Escalation**: Customer tries to set order status to 'Delivered' -> DENIED.
-6. **Admin Creation Injection**: Non-admin attempts to create a document in `/admins/{uid}` -> DENIED.
-7. **Ghost Field Injection**: Adding arbitrary admin flags to user order -> DENIED.
-8. **Catalog Deletion Attack**: Non-admin attempts to delete `/categories/stitched` -> DENIED.
-9. **Negative Price Order**: Creating an order with total = -5000 -> DENIED.
-10. **Malicious ID Buffer Overflow**: Document creation with a 2MB ID string -> DENIED.
-11. **Email Spoofing Attack**: User with fake token claiming admin email without `email_verified == true` -> DENIED.
-12. **Settings Destruction**: Non-admin attempts to rewrite store helpline or WhatsApp -> DENIED.
+1. **Unauthenticated Price Tampering**: Unauthenticated or customer user attempts to update product price -> DENIED.
+2. **Customer Cross-Profile Snooping**: Customer A attempts to `get` or `list` `/users/customerB` -> DENIED.
+3. **Self-Assigned Admin Role Escalation**: Customer registers at `/users/{uid}` with `role: 'admin'` or updates `role` to `'admin'` -> DENIED.
+4. **Customer Cross-Order Snooping**: Customer A attempts to `get` or `list` Customer B's order at `/orders/{orderId}` -> DENIED.
+5. **Unauthorized Order Status Escalation**: Customer tries to update `orderStatus` to `'Delivered'` or forge `trackingNumber` -> DENIED.
+6. **Order Identity Spoofing**: Customer A creates an order with `userId: 'customerB'` -> DENIED.
+7. **Admin Registry Injection**: Non-admin attempts to write to `/admins/{uid}` -> DENIED.
+8. **Email Spoofing Attack**: User with unverified token (`email_verified == false`) claiming admin email -> DENIED.
+9. **Shadow / Ghost Field Injection**: Client sends unexpected fields (`isAdmin: true`, `customDiscount: 99999`) to `/users/{uid}` -> DENIED by `keys().hasOnly()`.
+10. **Negative Price Order / Catalog Manipulation**: Creating an order with `total = -5000` or deleting `/categories/stitched` as a customer -> DENIED.
+11. **Malicious ID Buffer Overflow**: Document creation with oversized >128 byte ID or invalid characters -> DENIED by `isValidId()`.
+12. **Backend API Privilege Escalation**: Customer sends Bearer ID token to `GET /api/orders`, `PATCH /api/orders/:id`, `GET /api/emails`, or `POST /api/auth/verify-admin` -> DENIED with HTTP 403 Forbidden.

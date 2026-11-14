@@ -1,5 +1,23 @@
 {
   "entities": {
+    "User": {
+      "title": "User",
+      "description": "Registered customer or administrator account profile in NOOR STUDIO",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 120 },
+        "email": { "type": "string", "maxLength": 160 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "role": { "type": "string", "enum": ["customer", "admin"], "maxLength": 20 },
+        "address": { "type": "string", "maxLength": 500 },
+        "city": { "type": "string", "maxLength": 80 },
+        "postalCode": { "type": "string", "maxLength": 20 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["uid", "name", "email", "phone", "role", "createdAt"]
+    },
     "Product": {
       "title": "Product",
       "description": "Product document for NOOR STUDIO women's fashion store",
@@ -49,12 +67,19 @@
     },
     "Order": {
       "title": "Order",
-      "description": "Customer order document",
+      "description": "Customer order document with normalized and storefront fields",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "orderNumber": { "type": "string", "maxLength": 50 },
         "userId": { "type": "string", "maxLength": 128 },
+        "customerId": { "type": "string", "maxLength": 128 },
+        "customerName": { "type": "string", "maxLength": 120 },
+        "customerEmail": { "type": "string", "maxLength": 160 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "shippingAddress": { "type": "string", "maxLength": 500 },
+        "products": { "type": "array" },
+        "totalAmount": { "type": "number" },
         "isGuest": { "type": "boolean" },
         "customer": { "type": "object" },
         "items": { "type": "array" },
@@ -140,6 +165,10 @@
     }
   },
   "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Registered customer and admin user profiles (strictly owner or admin readable)"
+    },
     "/products/{productId}": {
       "schema": { "$ref": "#/entities/Product" },
       "description": "Published women fashion products with color variants"
@@ -150,7 +179,7 @@
     },
     "/orders/{orderId}": {
       "schema": { "$ref": "#/entities/Order" },
-      "description": "Customer orders placed online or via COD"
+      "description": "Customer orders placed online or via COD (strictly owner or admin readable)"
     },
     "/carts/{userId}": {
       "schema": { "$ref": "#/entities/Cart" },

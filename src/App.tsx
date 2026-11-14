@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { AuthProvider } from './context/AuthContext';
-import { StoreProvider, useStore } from './context/StoreContext';
+import React, { useState, useEffect } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { StoreProvider } from './context/StoreContext';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { Header } from './components/layout/Header';
@@ -11,6 +11,7 @@ import { ShopPage } from './components/shop/ShopPage';
 import { ProductDetails } from './components/product/ProductDetails';
 import { CheckoutPage } from './components/checkout/CheckoutPage';
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { AdminLoginPage } from './components/admin/AdminLoginPage';
 import { CustomerDashboard } from './components/account/CustomerDashboard';
 import { AuthModal } from './components/account/AuthModal';
 import { SearchModal } from './components/search/SearchModal';
@@ -24,11 +25,19 @@ import {
   TermsAndConditionsPage,
 } from './components/info/InfoPages';
 import { Product, Order } from './types';
-import { MessageCircle, Phone } from 'lucide-react';
+import { MessageCircle, Loader2 } from 'lucide-react';
+
+function isPrivateAdminPath(pathname: string): boolean {
+  const normalized = pathname.replace(/\/+$/, '') || '/';
+  return normalized === '/admin' || normalized === '/admin/login';
+}
 
 function MainApp() {
-  const { settings } = useStore();
+  const { user, loading: authLoading, isAdmin, adminVerified } = useAuth();
 
+  const [isAdminRoute, setIsAdminRoute] = useState<boolean>(() =>
+    isPrivateAdminPath(window.location.pathname)
+  );
   const [currentView, setCurrentView] = useState<string>('home');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedColorName, setSelectedColorName] = useState<string | undefined>(undefined);
@@ -38,6 +47,74 @@ function MainApp() {
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+
+  // Sync URL navigation (back/forward browser buttons)
+  useEffect(() => {
+    const handlePopState = () => {
+      const adminPath = isPrivateAdminPath(window.location.pathname);
+      setIsAdminRoute(adminPath);
+      if (!adminPath && currentView === 'admin') {
+        setCurrentView('home');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentView]);
+
+  // Strict route guard: if a non-admin logged-in customer manually navigates to /admin, immediately deny and redirect to storefront
+  useEffect(() => {
+    if (!authLoading && isAdminRoute && user && !(isAdmin && adminVerified)) {
+      window.history.replaceState({}, '', '/');
+      setIsAdminRoute(false);
+      setCurrentView('home');
+    }
+  }, [authLoading, isAdminRoute, user, isAdmin, adminVerified]);
+
+  // Sync verified admin route URL
+  useEffect(() => {
+    if (!authLoading && isAdminRoute && user && isAdmin && adminVerified) {
+      if (window.location.pathname !== '/admin') {
+        window.history.replaceState({}, '', '/admin');
+      }
+    }
+  }, [authLoading, isAdminRoute, user, isAdmin, adminVerified]);
+
+  const navigateToStoreHome = () => {
+    if (window.location.pathname !== '/') {
+      window.history.pushState({}, '', '/');
+    }
+    setIsAdminRoute(false);
+    setCurrentView('home');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Private Admin Route Rendering (NEVER accessible from customer UI; strictly auth-guarded)
+  if (isAdminRoute) {
+    if (authLoading) {
+      return (
+        <div className="min-h-screen bg-[#0F0D0B] text-[#FAF8F5] flex flex-col items-center justify-center gap-3">
+          <Loader2 className="w-8 h-8 text-[#C5A059] animate-spin" />
+          <p className="text-xs uppercase tracking-[0.25em] text-[#A89D93]">
+            Verifying Executive Session...
+          </p>
+        </div>
+      );
+    }
+
+    if (!user) {
+      return <AdminLoginPage onBackToStore={navigateToStoreHome} />;
+    }
+
+    if (isAdmin && adminVerified) {
+      return <AdminDashboard onExit={navigateToStoreHome} />;
+    }
+
+    // Fallback redirect state while useEffect replaces URL to '/'
+    return null;
+  }
+
+  // Never allow customer view state to jump to 'admin' directly
+  const safeView = currentView === 'admin' ? 'home' : currentView;
 
   // Navigation handlers
   const handleSelectProduct = (product: Product, colorName?: string) => {
@@ -63,24 +140,12 @@ function MainApp() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // If in Admin Dashboard full view
-  if (currentView === 'admin') {
-    return (
-      <AdminDashboard
-        onExit={() => {
-          setCurrentView('home');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-      />
-    );
-  }
-
   return (
     <div className="min-h-screen w-full overflow-x-hidden flex flex-col bg-[#FAF8F5] text-[#1F1C1A]">
       {/* Global Header */}
       <Header
-        currentView={currentView}
-        setCurrentView={setCurrentView}
+        currentView={safeView}
+        setCurrentView={(v) => setCurrentView(v === 'admin' ? 'home' : v)}
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
         selectedSubcategory={selectedSubcategory}
@@ -91,14 +156,14 @@ function MainApp() {
 
       {/* Main Content Router */}
       <main className="flex-1">
-        {currentView === 'home' && (
+        {safeView === 'home' && (
           <HomePage
             onNavigateToShop={handleNavigateToShop}
             onSelectProduct={handleSelectProduct}
           />
         )}
 
-        {currentView === 'shop' && (
+        {safeView === 'shop' && (
           <ShopPage
             initialCategory={selectedCategory}
             initialSubcategory={selectedSubcategory}
@@ -107,7 +172,7 @@ function MainApp() {
           />
         )}
 
-        {currentView === 'product-details' && selectedProduct && (
+        {safeView === 'product-details' && selectedProduct && (
           <ProductDetails
             product={selectedProduct}
             initialColorName={selectedColorName}
@@ -123,49 +188,52 @@ function MainApp() {
           />
         )}
 
-        {currentView === 'checkout' && (
+        {safeView === 'checkout' && (
           <CheckoutPage
             onBackToShop={() => {
               setCurrentView('shop');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            onViewOrder={(order: Order) => {
+            onViewOrder={(_order: Order) => {
               setCurrentView('account');
             }}
           />
         )}
 
-        {currentView === 'account' && (
+        {safeView === 'account' && (
           <CustomerDashboard
             initialTab="orders"
             onSelectProduct={handleSelectProduct}
             onBackToShop={() => setCurrentView('shop')}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
           />
         )}
 
-        {currentView === 'tracking' && (
+        {safeView === 'tracking' && (
           <CustomerDashboard
             initialTab="tracking"
             onSelectProduct={handleSelectProduct}
             onBackToShop={() => setCurrentView('shop')}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
           />
         )}
 
-        {currentView === 'wishlist' && (
+        {safeView === 'wishlist' && (
           <CustomerDashboard
             initialTab="wishlist"
             onSelectProduct={handleSelectProduct}
             onBackToShop={() => setCurrentView('shop')}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
           />
         )}
 
-        {currentView === 'about' && <AboutPage />}
-        {currentView === 'contact' && <ContactPage />}
-        {currentView === 'shipping-policy' && <ShippingPolicyPage />}
-        {currentView === 'returns-policy' && <ReturnsPolicyPage />}
-        {currentView === 'faqs' && <FAQsPage />}
-        {currentView === 'privacy-policy' && <PrivacyPolicyPage />}
-        {currentView === 'terms-and-conditions' && <TermsAndConditionsPage />}
+        {safeView === 'about' && <AboutPage />}
+        {safeView === 'contact' && <ContactPage />}
+        {safeView === 'shipping-policy' && <ShippingPolicyPage />}
+        {safeView === 'returns-policy' && <ReturnsPolicyPage />}
+        {safeView === 'faqs' && <FAQsPage />}
+        {safeView === 'privacy-policy' && <PrivacyPolicyPage />}
+        {safeView === 'terms-and-conditions' && <TermsAndConditionsPage />}
       </main>
 
       {/* Shopping Bag Slide-Over Drawer */}
@@ -176,7 +244,7 @@ function MainApp() {
         }}
       />
 
-      {/* Global Modals */}
+      {/* Global Customer Auth Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
@@ -211,7 +279,7 @@ function MainApp() {
           if (view === 'shop') {
             handleNavigateToShop(category);
           } else {
-            setCurrentView(view);
+            setCurrentView(view === 'admin' ? 'home' : view);
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }
         }}

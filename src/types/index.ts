@@ -92,10 +92,32 @@ export interface OrderItem {
   quantity: number;
 }
 
+export type UserRole = 'customer' | 'admin';
+
+export interface UserProfile {
+  uid: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: UserRole;
+  address?: string;
+  city?: string;
+  postalCode?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface Order {
   id: string;
   orderNumber: string;
   userId?: string;
+  customerId?: string;
+  customerName?: string;
+  customerEmail?: string;
+  phone?: string;
+  shippingAddress?: string;
+  products?: OrderItem[];
+  totalAmount?: number;
   isGuest: boolean;
   customer: CustomerInfo;
   items: OrderItem[];

@@ -13,13 +13,13 @@ import firebaseConfig from '../../firebase-applet-config.json';
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 /* CRITICAL: The app will break without the firestoreDatabaseId argument.
-   Use experimentalForceLongPolling to avoid WebChannel 10-second stream timeouts in sandboxed/proxy browsers. */
+   Use experimentalAutoDetectLongPolling so WebChannel is used when supported and long polling activates automatically behind restrictive proxies. */
 function createFirestoreDb(): Firestore {
   try {
     return initializeFirestore(
       app,
       {
-        experimentalForceLongPolling: true,
+        experimentalAutoDetectLongPolling: true,
         ignoreUndefinedProperties: true,
       },
       firebaseConfig.firestoreDatabaseId

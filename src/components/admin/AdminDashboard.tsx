@@ -32,10 +32,12 @@ import {
   Check,
   Tag,
   Star,
+  LogOut,
+  Calendar,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
-import { Product, Order, Category, ColorVariation, SizeStock, OrderStatus } from '../../types';
+import { Product, Order, Category, ColorVariation, SizeStock, OrderStatus, UserProfile } from '../../types';
 import {
   collection,
   onSnapshot,
@@ -48,6 +50,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '../../firebase/config';
 import { INITIAL_PRODUCTS } from '../../firebase/seed';
+import { AdminLoginPage } from './AdminLoginPage';
 
 export const AVAILABLE_STORE_ASSETS = [
   { name: 'Heer Organza Lehenga Red/Pink (3)', url: '/assets/aistudio/weddingseason__3__6ca9845d.jpeg' },
@@ -85,7 +88,7 @@ export const AVAILABLE_STORE_ASSETS = [
 ];
 
 export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => {
-  const { user, isAdmin, signInAsAdminDemo } = useAuth();
+  const { user, isAdmin, adminVerified, getIdToken, signOut } = useAuth();
   const {
     products,
     categories,
@@ -113,6 +116,22 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
+  const [registeredUsers, setRegisteredUsers] = useState<UserProfile[]>([]);
+  const [selectedCustomerProfile, setSelectedCustomerProfile] = useState<{
+    id: string;
+    uid?: string;
+    fullName: string;
+    email: string;
+    phone: string;
+    city: string;
+    address: string;
+    registeredAt: string;
+    orderCount: number;
+    totalSpent: number;
+    latestOrderDate?: string;
+    latestStatus?: string;
+    orders: Order[];
+  } | null>(null);
 
   // Dedicated Image Upload & Sequence state
   const [selectedProductIdForUpload, setSelectedProductIdForUpload] = useState<string>('');
@@ -240,44 +259,91 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
   const [resendingEmailId, setResendingEmailId] = useState<string | null>(null);
   const [emailResentMessage, setEmailResentMessage] = useState<string | null>(null);
 
-  // Fetch real-time orders from Firestore, Backend Express API, and local storage
+  // Fetch real-time orders and registered customers ONLY when backend-verified Admin is active
   useEffect(() => {
+    if (!isAdmin || !adminVerified || !auth.currentUser) {
+      setOrders([]);
+      setRegisteredUsers([]);
+      setLoadingOrders(false);
+      return;
+    }
+
     let isMounted = true;
+    setLoadingOrders(true);
 
     const mergeAndSetOrders = (incoming: Order[]) => {
       setOrders((prev) => {
         const map = new Map<string, Order>();
         prev.forEach((o) => map.set(o.id || o.orderNumber, o));
         incoming.forEach((o) => map.set(o.id || o.orderNumber, o));
-        try {
-          const cached: Order[] = JSON.parse(localStorage.getItem('noor_placed_orders') || '[]');
-          cached.forEach((o) => {
-            if (!map.has(o.id || o.orderNumber)) {
-              map.set(o.id || o.orderNumber, o);
-            }
-          });
-        } catch (_) {}
-
         return Array.from(map.values()).sort(
           (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
       });
     };
 
-    // 1. Fetch from Express Backend API
-    fetch('/api/orders')
-      .then((res) => res.json())
-      .then((data) => {
-        if (isMounted && data.success && Array.isArray(data.orders)) {
-          mergeAndSetOrders(data.orders);
+    const mergeRegisteredUsers = (incoming: UserProfile[]) => {
+      setRegisteredUsers((prev) => {
+        const map = new Map<string, UserProfile>();
+        prev.forEach((u) => map.set(u.uid, u));
+        incoming.forEach((u) => {
+          if (u.uid && u.role !== 'admin') {
+            map.set(u.uid, u);
+          }
+        });
+        return Array.from(map.values()).sort(
+          (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+        );
+      });
+    };
+
+    // 1. Authenticated Express Admin API calls with Bearer ID Token
+    (async () => {
+      try {
+        const token = await getIdToken();
+        if (!token || !isMounted) return;
+        const headers = { Authorization: `Bearer ${token}` };
+
+        const [ordersRes, customersRes] = await Promise.all([
+          fetch('/api/orders', { headers }),
+          fetch('/api/admin/customers', { headers }),
+        ]);
+
+        if (ordersRes.ok) {
+          const ordersData = await ordersRes.json();
+          if (isMounted && ordersData.success && Array.isArray(ordersData.orders)) {
+            mergeAndSetOrders(ordersData.orders);
+          }
         }
-      })
-      .catch((err) => console.warn('Backend orders fetch note:', err));
+
+        if (customersRes.ok) {
+          const custData = await customersRes.json();
+          if (isMounted && custData.success && Array.isArray(custData.customers)) {
+            mergeRegisteredUsers(
+              custData.customers.map((c: any) => ({
+                uid: c.uid,
+                name: c.name || 'Customer',
+                email: c.email || '',
+                phone: c.phone || '',
+                role: c.role || 'customer',
+                address: c.address || '',
+                city: c.city || '',
+                createdAt: c.createdAt || new Date().toISOString(),
+              }))
+            );
+          }
+        }
+      } catch (err) {
+        console.warn('Admin backend fetch note:', err);
+      } finally {
+        if (isMounted) setLoadingOrders(false);
+      }
+    })();
 
     // 2. Real-time Firestore orders listener
-    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-    const unsub = onSnapshot(
-      q,
+    const ordersQ = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    const unsubOrders = onSnapshot(
+      ordersQ,
       (snapshot) => {
         if (!isMounted) return;
         const ords: Order[] = [];
@@ -288,22 +354,36 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
         setLoadingOrders(false);
       },
       (err) => {
-        console.warn('Orders snapshot warning', err);
-        if (isMounted) {
-          try {
-            const cached: Order[] = JSON.parse(localStorage.getItem('noor_placed_orders') || '[]');
-            if (cached.length > 0) mergeAndSetOrders(cached);
-          } catch (_) {}
-          setLoadingOrders(false);
-        }
+        console.warn('Orders snapshot warning:', err);
+        if (isMounted) setLoadingOrders(false);
+      }
+    );
+
+    // 3. Real-time Firestore registered users listener
+    const unsubUsers = onSnapshot(
+      collection(db, 'users'),
+      (snapshot) => {
+        if (!isMounted) return;
+        const usersList: UserProfile[] = [];
+        snapshot.forEach((d) => {
+          const u = d.data() as UserProfile;
+          if (u.role !== 'admin') {
+            usersList.push({ ...u, uid: d.id });
+          }
+        });
+        mergeRegisteredUsers(usersList);
+      },
+      (err) => {
+        console.warn('Users snapshot warning:', err);
       }
     );
 
     return () => {
       isMounted = false;
-      unsub();
+      unsubOrders();
+      unsubUsers();
     };
-  }, []);
+  }, [isAdmin, adminVerified, getIdToken]);
 
   // Sync settings when context loads
   useEffect(() => {
@@ -374,51 +454,109 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
     }
   }, [selectedProductIdForUpload, selectedColorIdxForUpload, products]);
 
-  // Aggregated customers list hook
+  // Aggregated customers list combining registered Firebase users and order history
   const customersList = useMemo(() => {
     const custMap = new Map<string, {
       id: string;
+      uid?: string;
       fullName: string;
       email: string;
       phone: string;
       city: string;
       address: string;
+      registeredAt: string;
       orderCount: number;
       totalSpent: number;
-      latestOrderDate: string;
-      latestStatus: string;
+      latestOrderDate?: string;
+      latestStatus?: string;
+      orders: Order[];
     }>();
 
+    // 1. Seed with registered user profiles
+    registeredUsers.forEach((u) => {
+      const emailKey = (u.email || '').trim().toLowerCase();
+      const key = u.uid || emailKey;
+      if (!key) return;
+      custMap.set(key, {
+        id: key,
+        uid: u.uid,
+        fullName: u.name || 'Registered Customer',
+        email: u.email || 'N/A',
+        phone: u.phone || 'N/A',
+        city: u.city || 'Pakistan',
+        address: u.address || 'Not provided yet',
+        registeredAt: u.createdAt || new Date().toISOString(),
+        orderCount: 0,
+        totalSpent: 0,
+        orders: [],
+      });
+    });
+
+    // 2. Attach order history and metrics (matching by uid, email, or phone)
     orders.forEach((o) => {
-      const phoneKey = (o.customer.phone || '').trim();
-      const emailKey = (o.customer.email || '').trim().toLowerCase();
-      const key = phoneKey || emailKey || o.orderNumber;
-      const existing = custMap.get(key);
+      const uidKey = (o.userId || o.customerId || '').trim();
+      const emailKey = (o.customerEmail || o.customer?.email || '').trim().toLowerCase();
+      const phoneKey = (o.phone || o.customer?.phone || '').trim();
+
+      let matchedKey: string | undefined;
+      if (uidKey && custMap.has(uidKey)) {
+        matchedKey = uidKey;
+      } else {
+        for (const [k, existing] of custMap.entries()) {
+          if (
+            (emailKey && existing.email.toLowerCase() === emailKey) ||
+            (phoneKey && existing.phone !== 'N/A' && existing.phone === phoneKey)
+          ) {
+            matchedKey = k;
+            break;
+          }
+        }
+      }
+
+      const targetKey = matchedKey || uidKey || emailKey || phoneKey || o.orderNumber;
+      const existing = custMap.get(targetKey);
       const orderTotal = o.orderStatus !== 'Cancelled' ? o.total : 0;
+
       if (existing) {
         existing.orderCount += 1;
         existing.totalSpent += orderTotal;
-        if (new Date(o.createdAt) > new Date(existing.latestOrderDate)) {
+        existing.orders.push(o);
+        if (
+          !existing.latestOrderDate ||
+          new Date(o.createdAt) > new Date(existing.latestOrderDate)
+        ) {
           existing.latestOrderDate = o.createdAt;
           existing.latestStatus = o.orderStatus;
         }
+        if (existing.address === 'Not provided yet' && o.customer?.address) {
+          existing.address = o.customer.address;
+        }
+        if (existing.city === 'Pakistan' && o.customer?.city) {
+          existing.city = o.customer.city;
+        }
       } else {
-        custMap.set(key, {
-          id: key,
-          fullName: o.customer.fullName || 'Valued Client',
-          email: o.customer.email || 'N/A',
-          phone: o.customer.phone || 'N/A',
-          city: o.customer.city || 'Pakistan',
-          address: o.customer.address || 'Standard Delivery Address',
+        custMap.set(targetKey, {
+          id: targetKey,
+          uid: uidKey || undefined,
+          fullName: o.customer?.fullName || o.customerName || 'Guest Client',
+          email: o.customer?.email || o.customerEmail || 'N/A',
+          phone: o.customer?.phone || o.phone || 'N/A',
+          city: o.customer?.city || 'Pakistan',
+          address: o.customer?.address || 'Standard Delivery Address',
+          registeredAt: o.createdAt,
           orderCount: 1,
           totalSpent: orderTotal,
           latestOrderDate: o.createdAt,
           latestStatus: o.orderStatus,
+          orders: [o],
         });
       }
     });
 
-    const list = Array.from(custMap.values());
+    const list = Array.from(custMap.values()).sort(
+      (a, b) => new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime()
+    );
+
     if (!customerSearch.trim()) return list;
     const q = customerSearch.toLowerCase();
     return list.filter(
@@ -428,7 +566,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
         c.email.toLowerCase().includes(q) ||
         c.city.toLowerCase().includes(q)
     );
-  }, [orders, customerSearch]);
+  }, [registeredUsers, orders, customerSearch]);
 
   // Collections filter products hook
   const filteredCollectionsProducts = useMemo(() => {
@@ -444,34 +582,9 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
     });
   }, [products, collectionsFilter, collectionsSearch]);
 
-  // Auth Guard: executed only after ALL hooks are called unconditionally
-  if (!isAdmin) {
-    return (
-      <div className="max-w-md mx-4 sm:mx-auto my-12 sm:my-20 p-6 sm:p-8 bg-white rounded-2xl border border-red-200 shadow-xl text-center space-y-4">
-        <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
-          <ShieldAlert className="w-8 h-8" />
-        </div>
-        <h2 className="font-serif text-xl font-bold text-[#1F1C1A]">Authorized Access Only</h2>
-        <p className="text-xs text-[#7A7169]">
-          The NOOR STUDIO Admin Portal requires verified administrative privileges.
-          Please sign in with the authorized store admin account (sawairamaryam837@gmail.com).
-        </p>
-        <div className="flex flex-col sm:flex-row gap-2.5 justify-center pt-2">
-          <button
-            onClick={() => signInAsAdminDemo()}
-            className="px-5 py-2.5 rounded-lg bg-[#C5A059] text-[#191715] text-xs font-bold hover:bg-[#B88E3E] hover:text-white transition"
-          >
-            Sign In as Store Admin (sawaira)
-          </button>
-          <button
-            onClick={onExit}
-            className="px-5 py-2.5 rounded-lg bg-[#1F1C1A] text-white text-xs font-semibold hover:bg-[#B88E3E] transition"
-          >
-            Return to Storefront
-          </button>
-        </div>
-      </div>
-    );
+  // Strict Auth Guard executed after ALL hooks: render private AdminLoginPage without leaking admin email or demo buttons
+  if (!isAdmin || !adminVerified) {
+    return <AdminLoginPage onBackToStore={onExit} />;
   }
 
   // Analytics
@@ -494,7 +607,6 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
   });
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
-    // 1. Optimistic local update
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, orderStatus: newStatus } : o))
     );
@@ -502,25 +614,22 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
       setSelectedOrderDetails({ ...selectedOrderDetails, orderStatus: newStatus });
     }
 
-    // 2. Authoritative update via Backend Server API
     try {
-      await fetch(`/api/orders/${orderId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderStatus: newStatus }),
-      });
+      const token = await getIdToken();
+      if (token) {
+        await fetch(`/api/orders/${orderId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ orderStatus: newStatus }),
+        });
+      }
     } catch (err) {
       console.warn('Backend order update note:', err);
     }
 
-    // 3. Update localStorage cache
-    try {
-      const cached: Order[] = JSON.parse(localStorage.getItem('noor_placed_orders') || '[]');
-      const updated = cached.map((o) => (o.id === orderId ? { ...o, orderStatus: newStatus } : o));
-      localStorage.setItem('noor_placed_orders', JSON.stringify(updated));
-    } catch (_) {}
-
-    // 4. Update Firestore if authenticated session is active
     if (auth.currentUser) {
       try {
         await updateDoc(doc(db, 'orders', orderId), {
@@ -536,7 +645,6 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
   const handlePostExBooking = async (order: Order) => {
     const generatedTracking = `PEX-${Date.now().toString().slice(-8)}`;
 
-    // 1. Optimistic local state update
     setOrders((prev) =>
       prev.map((o) =>
         o.id === order.id
@@ -553,36 +661,28 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
       });
     }
 
-    // 2. Set UI confirmation state immediately
     setTrackingGenerated(generatedTracking);
 
-    // 3. Authoritative update via Backend Server API
     try {
-      await fetch(`/api/orders/${order.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          trackingNumber: generatedTracking,
-          courier: 'PostEx Express COD',
-          orderStatus: 'Shipped',
-        }),
-      });
+      const token = await getIdToken();
+      if (token) {
+        await fetch(`/api/orders/${order.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            trackingNumber: generatedTracking,
+            courier: 'PostEx Express COD',
+            orderStatus: 'Shipped',
+          }),
+        });
+      }
     } catch (err) {
       console.warn('Backend tracking patch note:', err);
     }
 
-    // 4. Update localStorage cache
-    try {
-      const cached: Order[] = JSON.parse(localStorage.getItem('noor_placed_orders') || '[]');
-      const updated = cached.map((o) =>
-        o.id === order.id
-          ? { ...o, trackingNumber: generatedTracking, courier: 'PostEx Express COD', orderStatus: 'Shipped' }
-          : o
-      );
-      localStorage.setItem('noor_placed_orders', JSON.stringify(updated));
-    } catch (_) {}
-
-    // 5. Update Firestore if authenticated session is active
     if (auth.currentUser) {
       try {
         await updateDoc(doc(db, 'orders', order.id), {
@@ -602,9 +702,13 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
     setResendingEmailId(order.id);
     setEmailResentMessage(null);
     try {
+      const token = await getIdToken();
       const resp = await fetch('/api/send-confirmation-email', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ order, targetEmail: order.customer.email }),
       });
       const data = await resp.json();
@@ -612,7 +716,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
         setEmailResentMessage(`Confirmation email successfully sent to ${order.customer.email}!`);
         setTimeout(() => setEmailResentMessage(null), 5000);
       }
-    } catch (err) {
+    } catch {
       setEmailResentMessage(`Confirmation email queued for ${order.customer.email}`);
       setTimeout(() => setEmailResentMessage(null), 5000);
     } finally {
@@ -956,15 +1060,25 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
             </span>
           </div>
 
-          <div className="flex items-center gap-3 self-start sm:self-auto">
+          <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
             <span className="text-xs text-[#A89D93] hidden md:inline">
-              Logged in: <strong className="text-white">{user?.email}</strong>
+              Verified Admin: <strong className="text-white">{user?.email}</strong>
             </span>
             <button
               onClick={onExit}
               className="px-3.5 sm:px-4 py-1.5 rounded-lg bg-[#2D2825] hover:bg-[#C5A059] hover:text-[#191715] text-xs font-semibold transition whitespace-nowrap"
             >
-              Back to Storefront
+              View Storefront
+            </button>
+            <button
+              onClick={async () => {
+                await signOut();
+                onExit();
+              }}
+              className="px-3.5 sm:px-4 py-1.5 rounded-lg border border-red-500/40 text-red-200 hover:bg-red-600 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition whitespace-nowrap"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Logout</span>
             </button>
           </div>
         </div>
@@ -1079,11 +1193,13 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
               </div>
 
               <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-sm">
-                <span className="text-xs uppercase tracking-wider font-semibold text-[#8C827A]">Active Catalog</span>
+                <span className="text-xs uppercase tracking-wider font-semibold text-[#8C827A]">Registered Customers</span>
                 <p className="font-serif text-xl sm:text-2xl lg:text-3xl font-bold text-[#1F1C1A] mt-1">
-                  {products.filter((p) => p.isActive).length}
+                  {customersList.length}
                 </p>
-                <p className="text-[11px] text-[#A89D93] mt-1">Across {categories.length} categories</p>
+                <p className="text-[11px] text-[#A89D93] mt-1">
+                  {products.filter((p) => p.isActive).length} Active Products
+                </p>
               </div>
 
               <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-sm">
@@ -2422,9 +2538,9 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
           <div className="space-y-6 animate-fadeIn">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#EADBCE] pb-4">
               <div>
-                <h2 className="font-serif text-2xl font-bold text-[#1F1C1A]">Customer Directory & Order History</h2>
+                <h2 className="font-serif text-2xl font-bold text-[#1F1C1A]">Registered Customers &amp; Order History</h2>
                 <p className="text-xs text-[#7A7169] mt-1">
-                  View patron profiles, total spend, delivery locations, and send instant WhatsApp updates.
+                  View registered customer profiles, contact details, registration dates, and individual order history.
                 </p>
               </div>
               <div className="relative max-w-xs w-full">
@@ -2433,7 +2549,7 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
                   type="text"
                   value={customerSearch}
                   onChange={(e) => setCustomerSearch(e.target.value)}
-                  placeholder="Search customer name, phone, city..."
+                  placeholder="Search by name, email, or phone..."
                   className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#D9CCC2] bg-white text-xs focus:outline-none focus:border-[#B88E3E]"
                 />
               </div>
@@ -2466,55 +2582,80 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
             {/* Customers Table */}
             <div className="bg-white rounded-2xl border border-[#EADBCE] overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] text-xs text-left text-[#4A423D]">
+                <table className="w-full min-w-[780px] text-xs text-left text-[#4A423D]">
                   <thead className="bg-[#FAF8F5] text-[#1F1C1A] uppercase tracking-wider font-semibold border-b border-[#EADBCE]">
                     <tr>
                       <th className="py-3 px-4">Customer Name</th>
-                      <th className="py-3 px-4">Contact Info</th>
-                      <th className="py-3 px-4">Delivery City & Address</th>
+                      <th className="py-3 px-4">Email &amp; Phone</th>
+                      <th className="py-3 px-4">Registered Date</th>
                       <th className="py-3 px-4 text-center">Orders Placed</th>
                       <th className="py-3 px-4">Total Spent (PKR)</th>
                       <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#EADBCE]">
-                    {customersList.map((c) => (
-                      <tr key={c.id} className="hover:bg-[#FAF8F5]/80 transition">
-                        <td className="py-3 px-4">
-                          <p className="font-bold text-xs text-[#1F1C1A]">{c.fullName}</p>
-                          <span className="text-[10px] text-[#8C827A]">
-                            Last order: {new Date(c.latestOrderDate).toLocaleDateString()} ({c.latestStatus})
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <p className="font-medium text-[#1F1C1A]">{c.phone}</p>
-                          <p className="text-[10px] text-[#8C827A]">{c.email}</p>
-                        </td>
-                        <td className="py-3 px-4">
-                          <p className="font-semibold text-[#1F1C1A]">{c.city}</p>
-                          <p className="text-[10px] text-[#8C827A] line-clamp-1">{c.address}</p>
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          <span className="px-2.5 py-0.5 rounded-full bg-[#FAF8F5] border border-[#EADBCE] font-bold text-[#1F1C1A]">
-                            {c.orderCount}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 font-bold text-[#1F1C1A]">
-                          Rs. {c.totalSpent.toLocaleString()}
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <a
-                            href={`https://wa.me/92${c.phone.replace(/^0/, '').replace(/\D/g, '')}?text=Assalam-o-Alaikum%20${encodeURIComponent(c.fullName)}%2C%20thank%20you%20for%20shopping%20with%20NOOR%20STUDIO.`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-semibold shadow-xs transition"
-                          >
-                            <MessageCircle className="w-3.5 h-3.5" />
-                            <span>WhatsApp</span>
-                          </a>
+                    {customersList.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-[#8C827A]">
+                          No customers match your search criteria.
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      customersList.map((c) => (
+                        <tr key={c.id} className="hover:bg-[#FAF8F5]/80 transition">
+                          <td className="py-3 px-4">
+                            <p className="font-bold text-xs text-[#1F1C1A]">{c.fullName}</p>
+                            <span className="text-[10px] text-[#8C827A]">{c.city}</span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <p className="font-medium text-[#1F1C1A]">{c.email}</p>
+                            <p className="text-[11px] text-[#6F665F]">{c.phone}</p>
+                          </td>
+                          <td className="py-3 px-4">
+                            <p className="text-[#1F1C1A] flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-[#B88E3E]" />
+                              <span>{new Date(c.registeredAt).toLocaleDateString()}</span>
+                            </p>
+                            {c.latestOrderDate && (
+                              <span className="text-[10px] text-[#8C827A]">
+                                Last order: {new Date(c.latestOrderDate).toLocaleDateString()} ({c.latestStatus})
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span className="px-2.5 py-0.5 rounded-full bg-[#FAF8F5] border border-[#EADBCE] font-bold text-[#1F1C1A]">
+                              {c.orderCount}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 font-bold text-[#1F1C1A]">
+                            Rs. {c.totalSpent.toLocaleString()}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="inline-flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedCustomerProfile(c)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#1F1C1A] hover:bg-[#B88E3E] text-white text-xs font-semibold transition"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>Profile</span>
+                              </button>
+                              {c.phone && c.phone !== 'N/A' && (
+                                <a
+                                  href={`https://wa.me/92${c.phone.replace(/^0/, '').replace(/\D/g, '')}?text=Assalam-o-Alaikum%20${encodeURIComponent(c.fullName)}%2C%20thank%20you%20for%20shopping%20with%20NOOR%20STUDIO.`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-semibold shadow-xs transition"
+                                >
+                                  <MessageCircle className="w-3.5 h-3.5" />
+                                  <span>WhatsApp</span>
+                                </a>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -2522,6 +2663,97 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
           </div>
         )}
       </div>
+
+      {/* ================= CUSTOMER PROFILE & ORDER HISTORY MODAL ================= */}
+      {selectedCustomerProfile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-5 sm:p-7 shadow-2xl border border-[#EADBCE] max-h-[90vh] overflow-y-auto space-y-5">
+            <div className="flex items-start justify-between border-b border-[#EADBCE] pb-3 gap-2">
+              <div>
+                <h3 className="font-serif text-xl font-bold text-[#1F1C1A]">
+                  {selectedCustomerProfile.fullName}
+                </h3>
+                <p className="text-xs text-[#8C827A] mt-0.5">
+                  Registered: {new Date(selectedCustomerProfile.registeredAt).toLocaleString()}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedCustomerProfile(null)}
+                className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-[#EADBCE] space-y-1">
+                <p className="font-bold text-[#1F1C1A]">Contact &amp; Account</p>
+                <p className="break-all">Email: {selectedCustomerProfile.email}</p>
+                <p>Phone: {selectedCustomerProfile.phone}</p>
+                {selectedCustomerProfile.uid && (
+                  <p className="text-[10px] font-mono text-[#8C827A] break-all">
+                    UID: {selectedCustomerProfile.uid}
+                  </p>
+                )}
+              </div>
+              <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-[#EADBCE] space-y-1">
+                <p className="font-bold text-[#1F1C1A]">Delivery &amp; Summary</p>
+                <p>City: {selectedCustomerProfile.city}</p>
+                <p>Address: {selectedCustomerProfile.address}</p>
+                <p className="font-bold text-[#B88E3E]">
+                  {selectedCustomerProfile.orderCount} Orders • Rs. {selectedCustomerProfile.totalSpent.toLocaleString()}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2.5">
+              <p className="font-bold text-xs uppercase tracking-wider text-[#1F1C1A]">
+                Customer Order History ({selectedCustomerProfile.orders.length})
+              </p>
+              {selectedCustomerProfile.orders.length === 0 ? (
+                <p className="text-xs text-[#8C827A] p-4 rounded-xl bg-[#FAF8F5] border border-[#EADBCE] text-center">
+                  This registered customer has not placed any orders yet.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {selectedCustomerProfile.orders.map((ord) => (
+                    <div
+                      key={ord.id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl border border-[#EADBCE] text-xs"
+                    >
+                      <div>
+                        <p className="font-mono font-bold text-[#1F1C1A]">#{ord.orderNumber}</p>
+                        <p className="text-[11px] text-[#7A7169]">
+                          {new Date(ord.createdAt).toLocaleDateString()} • {ord.items.length} item(s)
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="px-2.5 py-0.5 rounded-full bg-[#FAF8F5] border border-[#EADBCE] font-semibold">
+                          {ord.orderStatus}
+                        </span>
+                        <span className="font-bold text-[#B88E3E]">
+                          Rs. {ord.total.toLocaleString()}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedCustomerProfile(null);
+                            setSelectedOrderDetails(ord);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-[#1F1C1A] text-white hover:bg-[#B88E3E] text-[11px] font-semibold transition"
+                        >
+                          Inspect
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ================= ORDER DETAILS MODAL ================= */}
       {selectedOrderDetails && (

@@ -1,14 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  ShieldCheck,
   Truck,
   CheckCircle,
   ArrowLeft,
   ShoppingBag,
   MessageCircle,
-  Phone,
   Lock,
-  Sparkles,
   Mail,
   FileText,
   X,
@@ -18,8 +15,8 @@ import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import { CustomerInfo, Order, OrderItem } from '../../types';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../../firebase/config';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../../firebase/config';
 
 interface CheckoutPageProps {
   onBackToShop: () => void;
@@ -53,18 +50,30 @@ const PAKISTANI_CITIES = [
 
 export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onViewOrder }) => {
   const { items, subtotal, shippingCost, discount, total, coupon, clearCart } = useCart();
-  const { user, savedAddress, saveAddress } = useAuth();
-  const { products, settings } = useStore();
+  const { user, userProfile, savedAddress, saveAddress, getIdToken } = useAuth();
+  const { settings } = useStore();
 
   const [formData, setFormData] = useState<CustomerInfo>({
-    fullName: user?.displayName || savedAddress?.fullName || '',
-    email: user?.email || savedAddress?.email || '',
-    phone: savedAddress?.phone || '',
-    address: savedAddress?.address || '',
-    city: savedAddress?.city || 'Lahore',
-    postalCode: savedAddress?.postalCode || '',
+    fullName: userProfile?.name || user?.displayName || savedAddress?.fullName || '',
+    email: userProfile?.email || user?.email || savedAddress?.email || '',
+    phone: userProfile?.phone || savedAddress?.phone || '',
+    address: userProfile?.address || savedAddress?.address || '',
+    city: userProfile?.city || savedAddress?.city || 'Lahore',
+    postalCode: userProfile?.postalCode || savedAddress?.postalCode || '',
     notes: '',
   });
+
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      fullName: prev.fullName || userProfile?.name || user?.displayName || savedAddress?.fullName || '',
+      email: prev.email || userProfile?.email || user?.email || savedAddress?.email || '',
+      phone: prev.phone || userProfile?.phone || savedAddress?.phone || '',
+      address: prev.address || userProfile?.address || savedAddress?.address || '',
+      city: prev.city || userProfile?.city || savedAddress?.city || 'Lahore',
+      postalCode: prev.postalCode || userProfile?.postalCode || savedAddress?.postalCode || '',
+    }));
+  }, [user, userProfile, savedAddress]);
 
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'Bank Transfer'>('COD');
   const [saveInfoForFuture, setSaveInfoForFuture] = useState(true);
@@ -136,10 +145,21 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
         quantity: i.quantity,
       }));
 
+      const shippingAddressText = [formData.address, formData.city, formData.postalCode]
+        .filter(Boolean)
+        .join(', ');
+
       const newOrder: Order = {
         id: orderId,
         orderNumber,
         userId: user?.uid || undefined,
+        customerId: user?.uid || undefined,
+        customerName: formData.fullName.trim(),
+        customerEmail: formData.email.trim(),
+        phone: formData.phone.trim(),
+        shippingAddress: shippingAddressText,
+        products: orderItems,
+        totalAmount: total,
         isGuest: !user,
         customer: formData,
         items: orderItems,
@@ -159,9 +179,15 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
 
       // 1. Send Order to Backend Server for Email Dispatch & Admin sync
       try {
+        const token = user ? await getIdToken() : null;
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+
         const resp = await fetch('/api/orders', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(newOrder),
         });
         if (resp.ok) {
@@ -190,7 +216,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
         console.warn('Firestore order save note:', firestoreErr);
       }
 
-      // Save order to local cache so customer can always track it seamlessly
+      // Save order to local cache for current session convenience
       try {
         const existingStored = JSON.parse(localStorage.getItem('noor_placed_orders') || '[]');
         localStorage.setItem('noor_placed_orders', JSON.stringify([newOrder, ...existingStored].slice(0, 50)));
@@ -198,37 +224,9 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
         console.warn('Local order cache note', cacheErr);
       }
 
-      // Safely attempt inventory deduction if permitted
-      try {
-        for (const item of items) {
-          const productRef = doc(db, 'products', item.productId);
-          const prodDoc = await getDoc(productRef);
-          if (prodDoc.exists()) {
-            const prodData = prodDoc.data();
-            const colors = prodData.colors || [];
-            const updatedColors = colors.map((col: any) => {
-              if (col.name.toLowerCase() === item.colorName.toLowerCase()) {
-                const updatedSizes = (col.sizes || []).map((sz: any) => {
-                  if (sz.size === item.size) {
-                    return { ...sz, stock: Math.max(0, sz.stock - item.quantity) };
-                  }
-                  return sz;
-                });
-                return { ...col, sizes: updatedSizes };
-              }
-              return col;
-            });
-            await updateDoc(productRef, { colors: updatedColors });
-          }
-        }
-      } catch (invErr) {
-        // Log inventory update warning without failing the user's completed order
-        console.warn('Inventory sync note:', invErr);
-      }
-
       // Save customer address in profile if requested
       if (saveInfoForFuture) {
-        saveAddress(formData);
+        await saveAddress(formData);
       }
 
       // Celebrate

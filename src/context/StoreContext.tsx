@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   collection,
-  onSnapshot,
+  getDocs,
+  getDoc,
   doc,
   setDoc,
   deleteDoc,
@@ -60,15 +61,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => unsubAuth();
   }, []);
 
-  // Subscribe to Products
+  // Load Products, Categories, and Store Settings via fast single-RPC reads (avoids unauthenticated Watch stream timeouts)
   useEffect(() => {
-    const unsub = onSnapshot(
-      collection(db, 'products'),
-      (snapshot) => {
-        if (!snapshot.empty) {
+    let active = true;
+
+    async function loadStorefrontCatalog() {
+      try {
+        const [productsSnap, categoriesSnap, settingsSnap] = await Promise.all([
+          getDocs(collection(db, 'products')),
+          getDocs(collection(db, 'categories')),
+          getDoc(doc(db, 'store_settings', 'general')),
+        ]);
+
+        if (!active) return;
+
+        if (!productsSnap.empty) {
           const dbProdsMap = new Map<string, Product>();
           const customProds: Product[] = [];
-          snapshot.forEach((docSnap) => {
+          productsSnap.forEach((docSnap) => {
             if (DEPRECATED_CATALOG_IDS.has(docSnap.id)) return;
             const data = { ...docSnap.data(), id: docSnap.id } as Product;
             dbProdsMap.set(docSnap.id, data);
@@ -103,26 +113,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         } else {
           setProducts(INITIAL_PRODUCTS);
         }
-        setLoading(false);
-      },
-      (error) => {
-        console.warn('Products onSnapshot note, using complete local catalog', error);
-        setProducts(INITIAL_PRODUCTS);
-        setLoading(false);
-      }
-    );
-    return () => unsub();
-  }, []);
 
-  // Subscribe to Categories
-  useEffect(() => {
-    const unsub = onSnapshot(
-      collection(db, 'categories'),
-      (snapshot) => {
-        if (!snapshot.empty) {
+        if (!categoriesSnap.empty) {
           const initialMap = new Map(INITIAL_CATEGORIES.map((c) => [c.id, c]));
           const cats: Category[] = [];
-          snapshot.forEach((docSnap) => {
+          categoriesSnap.forEach((docSnap) => {
             const data = { ...docSnap.data(), id: docSnap.id } as Category;
             const init = initialMap.get(data.id);
             if (init && init.image && init.image.startsWith('/assets/')) {
@@ -140,29 +135,28 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         } else {
           setCategories(INITIAL_CATEGORIES);
         }
-      },
-      (error) => {
-        console.warn('Categories onSnapshot error', error);
-        setCategories(INITIAL_CATEGORIES);
-      }
-    );
-    return () => unsub();
-  }, []);
 
-  // Subscribe to Settings
-  useEffect(() => {
-    const unsub = onSnapshot(
-      doc(db, 'store_settings', 'general'),
-      (docSnap) => {
-        if (docSnap.exists()) {
-          setSettings({ ...INITIAL_SETTINGS, ...(docSnap.data() as StoreSettings) });
+        if (settingsSnap.exists()) {
+          setSettings({ ...INITIAL_SETTINGS, ...(settingsSnap.data() as StoreSettings) });
         }
-      },
-      (error) => {
-        console.warn('Store settings onSnapshot error', error);
+      } catch (error) {
+        console.warn('Catalog load note, using complete local catalog', error);
+        if (active) {
+          setProducts(INITIAL_PRODUCTS);
+          setCategories(INITIAL_CATEGORIES);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
-    );
-    return () => unsub();
+    }
+
+    loadStorefrontCatalog();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const addProduct = async (prodData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -200,6 +194,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const deleteProduct = async (id: string) => {
     try {
       await deleteDoc(doc(db, 'products', id));
+      setProducts((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, `products/${id}`);
     }
@@ -208,6 +203,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const addCategory = async (cat: Category) => {
     try {
       await setDoc(doc(db, 'categories', cat.id), cat);
+      setCategories((prev) => [...prev, cat].sort((a, b) => a.order - b.order));
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, `categories/${cat.id}`);
     }
@@ -216,6 +212,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateCategory = async (id: string, data: Partial<Category>) => {
     try {
       await updateDoc(doc(db, 'categories', id), data);
+      setCategories((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, ...data } : c)).sort((a, b) => a.order - b.order)
+      );
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `categories/${id}`);
     }
@@ -224,6 +223,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const deleteCategory = async (id: string) => {
     try {
       await deleteDoc(doc(db, 'categories', id));
+      setCategories((prev) => prev.filter((c) => c.id !== id));
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, `categories/${id}`);
     }
@@ -232,6 +232,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateSettings = async (data: Partial<StoreSettings>) => {
     try {
       await setDoc(doc(db, 'store_settings', 'general'), data, { merge: true });
+      setSettings((prev) => ({ ...prev, ...data }));
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, 'store_settings/general');
     }

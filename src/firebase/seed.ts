@@ -139,7 +139,7 @@ export const INITIAL_COUPONS: Coupon[] = [
 export async function seedDatabaseIfEmpty() {
   try {
     const currentUser = auth.currentUser;
-    if (!currentUser || !currentUser.emailVerified || currentUser.email?.toLowerCase() !== 'sawairamaryam837@gmail.com') {
+    if (!currentUser || !currentUser.emailVerified || currentUser.email?.toLowerCase() !== 'noorstudio16mpa@gmail.com') {
       return;
     }
     const productsSnap = await getDocs(collection(db, 'products'));

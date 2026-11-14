@@ -1,5 +1,16 @@
 import React, { useState } from 'react';
-import { X, Mail, Lock, User as UserIcon, AlertCircle, CheckCircle } from 'lucide-react';
+import {
+  X,
+  Mail,
+  Lock,
+  User as UserIcon,
+  Phone,
+  AlertCircle,
+  CheckCircle,
+  Eye,
+  EyeOff,
+  Loader2,
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface AuthModalProps {
@@ -13,14 +24,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     signInWithEmail,
     signUpWithEmail,
     resetPassword,
-    signInAsAdminDemo,
-    signInAsCustomerDemo,
   } = useAuth();
 
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -31,33 +42,57 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     e.preventDefault();
     setError(null);
     setSuccessMessage(null);
-    setLoading(true);
 
+    if (mode === 'signup') {
+      if (!name.trim()) {
+        setError('Please enter your full name.');
+        return;
+      }
+      const phoneDigits = phone.replace(/[^0-9]/g, '');
+      if (phoneDigits.length < 10) {
+        setError('Please enter a valid contact phone number (e.g. 03001234567).');
+        return;
+      }
+      if (password.length < 6) {
+        setError('Password must be at least 6 characters.');
+        return;
+      }
+    }
+
+    setLoading(true);
     try {
       if (mode === 'signin') {
         await signInWithEmail(email, password);
         onClose();
       } else if (mode === 'signup') {
-        if (!name.trim()) {
-          setError('Please enter your full name.');
-          setLoading(false);
-          return;
-        }
-        await signUpWithEmail(name, email, password);
+        await signUpWithEmail(name, phone, email, password);
         onClose();
       } else if (mode === 'forgot') {
         await resetPassword(email);
         setSuccessMessage('Password reset email sent. Please check your inbox.');
       }
     } catch (err: any) {
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
+      const code = err?.code || '';
+      if (code === 'auth/operation-not-allowed') {
+        setError(
+          'Email/Password sign-in is not yet enabled in Firebase Console. Please click "Continue with Google" above to sign in immediately.'
+        );
+      } else if (
+        code === 'auth/invalid-credential' ||
+        code === 'auth/wrong-password' ||
+        code === 'auth/user-not-found'
+      ) {
         setError('Incorrect email or password.');
-      } else if (err.code === 'auth/email-already-in-use') {
-        setError('An account with this email already exists.');
-      } else if (err.code === 'auth/weak-password') {
+      } else if (code === 'auth/email-already-in-use') {
+        setError('An account with this email already exists. Please sign in instead.');
+      } else if (code === 'auth/weak-password') {
         setError('Password must be at least 6 characters.');
+      } else if (code === 'auth/invalid-email') {
+        setError('Please enter a valid email address.');
+      } else if (code === 'auth/too-many-requests') {
+        setError('Too many attempts. Please wait a moment and try again.');
       } else {
-        setError(err.message || 'Authentication error.');
+        setError(err?.message || 'Authentication error. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -68,18 +103,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     setError(null);
     try {
       setLoading(true);
-      await signInWithGoogle();
-      onClose();
+      const signedIn = await signInWithGoogle();
+      if (signedIn) {
+        onClose();
+      }
     } catch (err: any) {
       if (
         err?.code === 'auth/popup-closed-by-user' ||
         err?.code === 'auth/cancelled-popup-request'
       ) {
-        // User closed the popup window; clean exit
         return;
       }
       if (err?.code === 'auth/popup-blocked') {
-        setError('Browser blocked Google sign-in popup. You can also sign in with Email or Demo below.');
+        setError('Browser blocked Google sign-in popup. Please allow popups or sign in with email.');
+      } else if (err?.code === 'auth/operation-not-allowed') {
+        setError('Google sign-in is disabled in Firebase Console. Please enable it under Authentication > Sign-in method.');
       } else {
         setError('Google sign in was not completed. Please try again.');
       }
@@ -93,6 +131,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-8 shadow-2xl border border-[#EADBCE] relative max-h-[92vh] overflow-y-auto">
         <button
           onClick={onClose}
+          aria-label="Close authentication modal"
           className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-black transition"
         >
           <X className="w-5 h-5" />
@@ -112,21 +151,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             Wear Your Elegance Style Of Excellence
           </p>
           <p className="text-xs text-[#8C827A] mt-1">
-            {mode === 'signin' && 'Sign in to access your orders and saved wishlist'}
+            {mode === 'signin' && 'Sign in to access your profile, orders, and saved wishlist'}
             {mode === 'signup' && 'Create your NOOR STUDIO customer account'}
             {mode === 'forgot' && 'Reset your account password'}
           </p>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2">
+          <div
+            role="alert"
+            className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2"
+          >
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {successMessage && (
-          <div className="mb-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center gap-2">
+          <div
+            role="status"
+            className="mb-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center gap-2"
+          >
             <CheckCircle className="w-4 h-4 shrink-0 text-emerald-600" />
             <span>{successMessage}</span>
           </div>
@@ -138,7 +183,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <button
               onClick={handleGoogleSignIn}
               type="button"
-              className="w-full py-2.5 px-4 rounded-xl border border-[#D9CCC2] bg-white hover:bg-[#FAF8F5] text-xs font-semibold text-[#1F1C1A] transition flex items-center justify-center gap-2 shadow-sm"
+              disabled={loading}
+              className="w-full py-2.5 px-4 rounded-xl border border-[#D9CCC2] bg-white hover:bg-[#FAF8F5] text-xs font-semibold text-[#1F1C1A] transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-60"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path
@@ -171,20 +217,37 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
         <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
           {mode === 'signup' && (
-            <div>
-              <label className="block font-semibold text-[#1F1C1A] mb-1">Full Name</label>
-              <div className="relative">
-                <UserIcon className="w-4 h-4 text-[#A89D93] absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Fatima Zahra"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-lg border border-[#D9CCC2] focus:outline-none focus:border-[#B88E3E]"
-                />
+            <>
+              <div>
+                <label className="block font-semibold text-[#1F1C1A] mb-1">Full Name</label>
+                <div className="relative">
+                  <UserIcon className="w-4 h-4 text-[#A89D93] absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Ayesha Malik"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 rounded-lg border border-[#D9CCC2] focus:outline-none focus:border-[#B88E3E]"
+                  />
+                </div>
               </div>
-            </div>
+
+              <div>
+                <label className="block font-semibold text-[#1F1C1A] mb-1">Phone Number</label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-[#A89D93] absolute left-3 top-2.5" />
+                  <input
+                    type="tel"
+                    required
+                    placeholder="03001234567"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 rounded-lg border border-[#D9CCC2] focus:outline-none focus:border-[#B88E3E]"
+                  />
+                </div>
+              </div>
+            </>
           )}
 
           <div>
@@ -194,6 +257,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               <input
                 type="email"
                 required
+                autoComplete="email"
                 placeholder="yourname@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -212,6 +276,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     onClick={() => {
                       setMode('forgot');
                       setError(null);
+                      setSuccessMessage(null);
                     }}
                     className="text-[11px] text-[#B88E3E] hover:underline"
                   >
@@ -222,13 +287,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               <div className="relative">
                 <Lock className="w-4 h-4 text-[#A89D93] absolute left-3 top-2.5" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
+                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-lg border border-[#D9CCC2] focus:outline-none focus:border-[#B88E3E]"
+                  className="w-full pl-9 pr-10 py-2 rounded-lg border border-[#D9CCC2] focus:outline-none focus:border-[#B88E3E]"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-2.5 top-2 p-0.5 text-[#8C827A] hover:text-[#1F1C1A] transition"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
           )}
@@ -236,15 +310,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-[#1F1C1A] hover:bg-[#B88E3E] text-white font-semibold uppercase tracking-wider transition shadow-md disabled:opacity-50 mt-2"
+            className="w-full py-3 rounded-xl bg-[#1F1C1A] hover:bg-[#B88E3E] text-white font-semibold uppercase tracking-wider transition shadow-md disabled:opacity-50 mt-2 flex items-center justify-center gap-2"
           >
-            {loading
-              ? 'Please wait...'
-              : mode === 'signin'
-              ? 'Sign In'
-              : mode === 'signup'
-              ? 'Create Account'
-              : 'Send Reset Link'}
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Please wait...</span>
+              </>
+            ) : mode === 'signin' ? (
+              'Sign In'
+            ) : mode === 'signup' ? (
+              'Create Account'
+            ) : (
+              'Send Reset Link'
+            )}
           </button>
         </form>
 
@@ -258,10 +337,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 onClick={() => {
                   setMode('signup');
                   setError(null);
+                  setSuccessMessage(null);
                 }}
                 className="font-bold text-[#B88E3E] hover:underline"
               >
-                Sign Up
+                Create Account
               </button>
             </p>
           )}
@@ -274,6 +354,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 onClick={() => {
                   setMode('signin');
                   setError(null);
+                  setSuccessMessage(null);
                 }}
                 className="font-bold text-[#B88E3E] hover:underline"
               >
@@ -290,6 +371,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 onClick={() => {
                   setMode('signin');
                   setError(null);
+                  setSuccessMessage(null);
                 }}
                 className="font-bold text-[#B88E3E] hover:underline"
               >
@@ -297,35 +379,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               </button>
             </p>
           )}
-        </div>
-
-        {/* 1-Click Preview Test Access */}
-        <div className="mt-4 pt-3 border-t border-[#F2ECE6] text-center">
-          <p className="text-[10px] uppercase font-bold tracking-wider text-[#A89D93] mb-2">
-            Instant Preview Access
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                signInAsCustomerDemo();
-                onClose();
-              }}
-              className="py-1 px-3 rounded-lg border border-[#D9CCC2] hover:bg-[#FAF8F5] text-[11px] font-semibold text-[#5A524C] transition"
-            >
-              Demo Customer
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                signInAsAdminDemo();
-                onClose();
-              }}
-              className="py-1 px-3 rounded-lg bg-[#1F1C1A] hover:bg-[#B88E3E] text-[11px] font-semibold text-white transition"
-            >
-              Store Admin (sawaira)
-            </button>
-          </div>
         </div>
       </div>
     </div>

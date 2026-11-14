@@ -20,7 +20,7 @@ import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
-import { collection, addDoc, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 
 interface ProductDetailsProps {
@@ -84,21 +84,23 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({
 
   // Load reviews from Firestore
   useEffect(() => {
+    let active = true;
     const q = query(collection(db, 'reviews'), where('productId', '==', product.id));
-    const unsub = onSnapshot(
-      q,
-      (snapshot) => {
+    getDocs(q)
+      .then((snapshot) => {
+        if (!active) return;
         const revs: Review[] = [];
-        snapshot.forEach((doc) => {
-          revs.push({ ...doc.data(), id: doc.id } as Review);
+        snapshot.forEach((docSnap) => {
+          revs.push({ ...docSnap.data(), id: docSnap.id } as Review);
         });
         setReviews(revs);
-      },
-      (error) => {
+      })
+      .catch((error) => {
         console.warn('Reviews load notice:', error);
-      }
-    );
-    return () => unsub();
+      });
+    return () => {
+      active = false;
+    };
   }, [product.id]);
 
   // Current stock for selected size & active color
@@ -180,15 +182,17 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({
     if (!reviewComment.trim()) return;
     setSubmittingReview(true);
     try {
-      await addDoc(collection(db, 'reviews'), {
+      const reviewPayload = {
         productId: product.id,
-        userId: user?.uid || null,
+        ...(user?.uid ? { userId: user.uid } : {}),
         authorName: reviewName.trim() || user?.displayName || 'Verified Shopper',
         rating: reviewRating,
         comment: reviewComment.trim(),
         verifiedBuyer: true,
         createdAt: new Date().toISOString(),
-      });
+      };
+      const docRef = await addDoc(collection(db, 'reviews'), reviewPayload);
+      setReviews((prev) => [{ ...reviewPayload, id: docRef.id } as Review, ...prev]);
       setShowReviewModal(false);
       setReviewComment('');
       setReviewName('');
