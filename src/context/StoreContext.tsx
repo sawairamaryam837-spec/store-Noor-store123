@@ -43,6 +43,9 @@ const DEPRECATED_CATALOG_IDS = new Set([
   'tulip-cutwork-shalwar',
   'classic-lawn-shalwar-kameez-2pc',
   'festive-karandi-shalwar-kameez',
+  'summer-schiffli-kurti',
+  'winter-khaddar-kurta',
+  'gracia-mint-unstitched',
 ]);
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

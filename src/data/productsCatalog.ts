@@ -112,8 +112,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     season: 'All Season',
     isStitched: true,
     fabric: 'Tissue Organza & Raw Silk',
-    regularPrice: 6200,
-    salePrice: 6200,
+    regularPrice: 7000,
+    salePrice: 7000,
     sku: 'MB-HER-620',
     isNewArrival: false,
     isBestSeller: true,
@@ -366,9 +366,9 @@ export const INITIAL_PRODUCTS: Product[] = [
     additionalCategories: ['Summer Wear', 'Casual Wear'],
     season: 'Summer',
     isStitched: true,
-    fabric: 'Pure Printed Silk',
-    regularPrice: 4250,
-    salePrice: 4250,
+    fabric: 'Digital Printed Silk Shirt And Trouser',
+    regularPrice: 2250,
+    salePrice: 2250,
     sku: 'ZSH-CRD-425',
     isNewArrival: true,
     isBestSeller: false,
@@ -400,58 +400,12 @@ export const INITIAL_PRODUCTS: Product[] = [
     ],
   },
 
-  // 9. Summer 1 Piece Kurti — Pistachio Mint Embroidered Summer Kurti
+  // 9. Unstitched & Summer — AGHA-NOOR Unstitched 3PC (Pistachio Mint)
   {
-    id: 'summer-schiffli-kurti',
-    name: 'Gracia Pastel Mint Embroidered Kurti',
-    slug: 'embroidered-schiffli-lawn-kurti',
-    brand: 'Agha Noor Replica',
-    type: '1PC Kurti',
-    description:
-      'Breezy summer 1-piece embroidered shirt in pistachio mint with pearl panel lines and delicate floral neckline artistry.',
-    category: 'Summer Wear',
-    subcategory: '1 Piece',
-    additionalCategories: [],
-    season: 'Summer',
-    isStitched: true,
-    fabric: 'Swiss Voile & Organza',
-    regularPrice: 2450,
-    salePrice: 2250,
-    sku: 'NS-SUM-101',
-    isNewArrival: false,
-    isBestSeller: false,
-    isFeatured: false,
-    isActive: true,
-    rating: 4.8,
-    reviewCount: 22,
-    createdAt: '2026-11-02T10:00:00.000Z',
-    updatedAt: '2026-11-02T10:00:00.000Z',
-    defaultColor: 'Pistachio Mint',
-    colors: [
-      {
-        name: 'Pistachio Mint',
-        hex: '#A9BFB2',
-        sku: 'NS-SUM-101-MNT',
-        images: [
-          '/assets/aistudio/d_AGHA_NOOR_Unstitch_Replica__2__4381500f.jpeg',
-        ],
-        sizes: [
-          { size: 'XS', stock: 5 },
-          { size: 'S', stock: 12 },
-          { size: 'M', stock: 15 },
-          { size: 'L', stock: 8 },
-          { size: 'XL', stock: 4 },
-        ],
-      },
-    ],
-  },
-
-  // 10. Unstitched & Summer — Gracia Pastel Mint Organza Unstitched 3PC
-  {
-    id: 'gracia-mint-unstitched',
-    name: 'Gracia Mint Organza Unstitched 3PC',
-    slug: 'gracia-mint-organza-unstitched-3pc',
-    brand: 'Gracia Collection',
+    id: 'AGHA-NOOR-Unstitched',
+    name: 'AGHA-NOOR-Unstitched-3pc',
+    slug: 'AGHA-NOOR-Unstitched-3pc',
+    brand: 'AGHA-NOOR-Unstitched-3pc',
     type: '3PC',
     description:
       'Complete unstitched 3-piece summer organza fabric suit with pearl-embellished neckline, embroidered sleeves, plain dyed trouser, and scalloped organza dupatta.',
@@ -461,8 +415,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     season: 'Summer',
     isStitched: false,
     fabric: 'Fine Organza & Grip',
-    regularPrice: 4400,
-    salePrice: 3890,
+    regularPrice: 4300,
+    salePrice: 4300,
     sku: 'GRC-MNT-389',
     isNewArrival: true,
     isBestSeller: false,
@@ -489,7 +443,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     ],
   },
 
-  // 11. Winter Wear & Unstitched & Casual — Breeze Embroidered Rice Karandi 2PC
+  // 10. Winter Wear & Unstitched & Casual — Breeze Embroidered Rice Karandi 2PC
   {
     id: 'breeze-rice-karandi',
     name: 'Breeze Embroidered Rice Karandi 2PC',
@@ -497,7 +451,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     brand: 'Breeze',
     type: '2PC',
     description:
-      'Warm unstitched two-piece winter rice karandi suit in rich plum wine with tonal borosilicate schiffli and floral embroidery across shirt front and sleeves.',
+      'Warm unstitched two-piece winter rice karandi suit with tonal borosilicate schiffli and floral embroidery across shirt front and sleeves.',
     category: 'Winter Wear',
     subcategory: '2 Piece',
     additionalCategories: ['Unstitched', 'Casual Wear'],
@@ -523,6 +477,19 @@ export const INITIAL_PRODUCTS: Product[] = [
         sku: 'BRZ-RK-PLM',
         images: [
           '/assets/aistudio/Breeze_Rice__karandi_embroidered_2PC__2__eeeb98c8.jpeg',
+          '/assets/aistudio/Breeze_Rice__karandi_embroidered_2PC_83b54bb8.jpeg',
+        ],
+        sizes: [
+          { size: 'Unstitched', stock: 25 },
+        ],
+      },
+      {
+        name: 'Emerald Teal',
+        hex: '#0E4E4A',
+        sku: 'BRZ-RK-TEL',
+        images: [
+          '/assets/aistudio/Breeze_Rice__karandi_embroidered_2PC_83b54bb8.jpeg',
+          '/assets/aistudio/Breeze_Rice__karandi_embroidered_2PC__2__eeeb98c8.jpeg',
         ],
         sizes: [
           { size: 'Unstitched', stock: 25 },
@@ -531,10 +498,94 @@ export const INITIAL_PRODUCTS: Product[] = [
     ],
   },
 
-  // 12. Unstitched & Winter & Casual — Plum & Blush Floral Viscose Linen 3PC
+  // 11. Unstitched & Winter — Embroidered Karandi 3 Piece (Off White)
+  {
+    id: 'embroidered-karandi-winter-3pc',
+    name: 'Embroidered Karandi 3 Piece',
+    slug: 'embroidered-karandi-winter-3pc',
+    brand: 'Noor Studio',
+    type: '3PC',
+    description:
+      'Beautiful off-white embroidered karandi 3-piece winter suit featuring colorful traditional embroidery with elegant floral and geometric patterns. A perfect choice for winter wear.',
+    category: 'Unstitched',
+    subcategory: '3 Piece',
+    additionalCategories: ['Winter Wear'],
+    season: 'Winter',
+    isStitched: false,
+    fabric: 'Embroidered Karandi',
+    regularPrice: 4000,
+    salePrice: 4000,
+    sku: 'NS-KAR-4000',
+    isNewArrival: true,
+    isBestSeller: false,
+    isFeatured: true,
+    isActive: true,
+    rating: 5.0,
+    reviewCount: 0,
+    createdAt: '2026-11-13T10:00:00.000Z',
+    updatedAt: '2026-11-13T10:00:00.000Z',
+    defaultColor: 'Off White',
+    colors: [
+      {
+        name: 'Off White',
+        hex: '#EDE5D5',
+        sku: 'NS-KAR-4000-WHT',
+        images: [
+          '/assets/aistudio/Embroidered_karandi_3PC_a54a2894.jpeg',
+        ],
+        sizes: [
+          { size: 'Unstitched', stock: 30 },
+        ],
+      },
+    ],
+  },
+
+  // 12. Unstitched & Winter — Sapphire Printed Linen 3PC (Beige & Mustard)
+  {
+    id: 'sapphire-printed-linen-winter-3pc',
+    name: 'Sapphire Printed Linen 3PC',
+    slug: 'sapphire-printed-linen-3pc',
+    brand: 'Sapphire',
+    type: '3PC',
+    description:
+      'Elegant Sapphire printed linen 3-piece winter suit featuring a beautiful all-over floral print on a light beige base, matching printed trousers, and a stylish mustard printed dupatta. Perfect for winter wear.',
+    category: 'Unstitched',
+    subcategory: '3 Piece',
+    additionalCategories: ['Winter Wear'],
+    season: 'Winter',
+    isStitched: false,
+    fabric: 'Printed Linen',
+    regularPrice: 3300,
+    salePrice: 3300,
+    sku: 'SAP-LIN-3300',
+    isNewArrival: true,
+    isBestSeller: false,
+    isFeatured: true,
+    isActive: true,
+    rating: 5.0,
+    reviewCount: 0,
+    createdAt: '2026-11-13T09:00:00.000Z',
+    updatedAt: '2026-11-13T09:00:00.000Z',
+    defaultColor: 'Beige & Mustard',
+    colors: [
+      {
+        name: 'Beige & Mustard',
+        hex: '#C5A45B',
+        sku: 'SAP-LIN-3300-BGM',
+        images: [
+          '/assets/aistudio/Sapphire_Printed_linen_3_PC_a06bbd24.jpeg',
+        ],
+        sizes: [
+          { size: 'Unstitched', stock: 30 },
+        ],
+      },
+    ],
+  },
+
+  // 13. Unstitched & Winter & Casual — Viscose Linen Printed Unstitched 3PC
   {
     id: 'printed-viscose-linen',
-    name: 'Plum & Blush Viscose Linen Unstitched 3PC',
+    name: 'Viscose Linen Printed Unstitched 3PC',
     slug: 'printed-viscose-linen-suit',
     brand: 'NOOR STUDIO',
     type: '3PC',
@@ -546,7 +597,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     season: 'Winter',
     isStitched: false,
     fabric: 'Winter Viscose Linen',
-    regularPrice: 4200,
+    regularPrice: 3690,
     salePrice: 3690,
     sku: 'NS-VIS-369',
     isNewArrival: false,
@@ -573,11 +624,11 @@ export const INITIAL_PRODUCTS: Product[] = [
     ],
   },
 
-  // 13. Winter Wear & Unstitched & Casual — Morashi Printed Khaddar 3PC (Colors accurately matched!)
+  // 14. Winter Wear & Unstitched & Casual — Morashi Khaddar Printed Suit 3PC
   {
     id: 'morashi-printed-khaddar',
-    name: 'Morashi Printed Khaddar Suit 3PC',
-    slug: 'morashi-printed-khaddar-suit',
+    name: 'Morashi Khaddar Printed Suit 3PC',
+    slug: 'morashi-khaddar-printed-suit',
     brand: 'Morashi',
     type: '3PC',
     description:
@@ -588,7 +639,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     season: 'Winter',
     isStitched: false,
     fabric: 'Pure Winter Khaddar',
-    regularPrice: 4000,
+    regularPrice: 3500,
     salePrice: 3500,
     sku: 'MOR-KHD-350',
     isNewArrival: true,
@@ -623,61 +674,6 @@ export const INITIAL_PRODUCTS: Product[] = [
         ],
         sizes: [
           { size: 'Unstitched', stock: 22 },
-        ],
-      },
-    ],
-  },
-
-  // 14. Winter 1 Piece Kurta — Morashi Printed Khaddar 1PC Shirt
-  {
-    id: 'winter-khaddar-kurta',
-    name: 'Morashi Printed Khaddar Kurta 1PC',
-    slug: 'warm-printed-khaddar-kurta',
-    brand: 'Morashi',
-    type: '1PC Kurta',
-    description:
-      'Warm winter khaddar single unstitched shirt piece with classic ethnic panel and floral motifs for everyday winter comfort.',
-    category: 'Winter Wear',
-    subcategory: '1 Piece',
-    additionalCategories: [],
-    season: 'Winter',
-    isStitched: false,
-    fabric: 'Winter Khaddar',
-    regularPrice: 2100,
-    salePrice: 1950,
-    sku: 'MOR-WIN-102',
-    isNewArrival: false,
-    isBestSeller: false,
-    isFeatured: false,
-    isActive: true,
-    rating: 4.7,
-    reviewCount: 19,
-    createdAt: '2026-10-27T10:00:00.000Z',
-    updatedAt: '2026-10-27T10:00:00.000Z',
-    defaultColor: 'Mustard Gold',
-    colors: [
-      {
-        name: 'Mustard Gold',
-        hex: '#D49017',
-        sku: 'MOR-WIN-102-GLD',
-        images: [
-          '/assets/aistudio/Morashi_Khaddar_printed__2__03f0c6d5.jpeg',
-          '/assets/aistudio/Morashi_Khaddar_printed_15af3f87.jpeg',
-        ],
-        sizes: [
-          { size: 'Unstitched', stock: 25 },
-        ],
-      },
-      {
-        name: 'Deep Maroon',
-        hex: '#7C242C',
-        sku: 'MOR-WIN-102-MRN',
-        images: [
-          '/assets/aistudio/Morashi_Khaddar_printed_15af3f87.jpeg',
-          '/assets/aistudio/Morashi_Khaddar_printed__2__03f0c6d5.jpeg',
-        ],
-        sizes: [
-          { size: 'Unstitched', stock: 20 },
         ],
       },
     ],
