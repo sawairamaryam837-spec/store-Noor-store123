@@ -66,15 +66,15 @@ export const Header: React.FC<HeaderProps> = ({
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-2.5 sm:gap-x-4 gap-y-1 text-[11px] sm:text-xs font-medium text-[#EADBCE]">
             <a
-              href={`tel:+92${settings.helpline ? settings.helpline.replace(/^0/, '') : '3284454746'}`}
+              href={`tel:+92${(settings.helpline || '0328-0547200').replace(/[^0-9]/g, '').replace(/^0/, '')}`}
               className="hover:text-white transition flex items-center gap-1 whitespace-nowrap"
             >
               <Phone className="w-3 h-3 text-[#E89A97] shrink-0" />
-              <span>Helpline: {settings.helpline || '03284454746'}</span>
+              <span>Helpline: {settings.helpline || '0328-0547200'}</span>
             </a>
             <span className="text-[#555] hidden xs:inline">|</span>
             <a
-              href="https://wa.me/923284454746"
+              href={`https://wa.me/${(settings.whatsapp || '+923280547200').replace(/[^0-9]/g, '')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-[#25D366] transition flex items-center gap-1 font-semibold whitespace-nowrap"
@@ -560,9 +560,9 @@ export const Header: React.FC<HeaderProps> = ({
 
           <div className="pt-4 border-t border-[#EADBCE] text-xs text-[#6F665F] space-y-2">
             <p className="font-semibold text-[#1F1C1A]">Customer Care</p>
-            <p>Helpline: <a href="tel:03284454746" className="text-[#1F1C1A] underline">03284454746</a></p>
-            <p>WhatsApp: <a href="https://wa.me/923284454746" target="_blank" rel="noreferrer" className="text-[#25D366] font-semibold underline">+923284454746</a></p>
-            <p>Email: <a href="mailto:support@noorstudio.pk" className="text-[#1F1C1A] underline">support@noorstudio.pk</a></p>
+            <p>Helpline: <a href="tel:+923280547200" className="text-[#1F1C1A] underline">0328-0547200</a></p>
+            <p>WhatsApp: <a href="https://wa.me/923280547200" target="_blank" rel="noreferrer" className="text-[#25D366] font-semibold underline">0328-0547200</a></p>
+            <p>Email: <a href="mailto:noorstudio16mpa@gmail.com" className="text-[#1F1C1A] underline">noorstudio16mpa@gmail.com</a></p>
           </div>
         </div>
       )}

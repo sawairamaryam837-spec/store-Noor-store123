@@ -140,7 +140,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
 
         if (settingsSnap.exists()) {
-          setSettings({ ...INITIAL_SETTINGS, ...(settingsSnap.data() as StoreSettings) });
+          const loaded = settingsSnap.data() as StoreSettings;
+          setSettings({
+            ...INITIAL_SETTINGS,
+            ...loaded,
+            helpline:
+              !loaded.helpline || loaded.helpline === '03284454746'
+                ? INITIAL_SETTINGS.helpline
+                : loaded.helpline,
+            whatsapp:
+              !loaded.whatsapp || loaded.whatsapp === '+923284454746'
+                ? INITIAL_SETTINGS.whatsapp
+                : loaded.whatsapp,
+            email:
+              !loaded.email || loaded.email === 'support@noorstudio.pk'
+                ? INITIAL_SETTINGS.email
+                : loaded.email,
+            announcement: loaded.announcement?.includes('03284454746')
+              ? loaded.announcement.replace(/03284454746/g, '0328-0547200')
+              : loaded.announcement || INITIAL_SETTINGS.announcement,
+          });
         }
       } catch (error) {
         console.warn('Catalog load note, using complete local catalog', error);

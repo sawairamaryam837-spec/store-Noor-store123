@@ -752,7 +752,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToShop, onSelectPr
               <div className="pt-2 flex flex-wrap gap-4 text-xs font-medium text-[#7A7169]">
                 <span>✓ 100% Genuine Fabrics</span>
                 <span>✓ Verified PostEx Courier COD</span>
-                <span>✓ Dedicated Helpline: 03284454746</span>
+                <span>✓ Dedicated Helpline: 0328-0547200</span>
               </div>
             </div>
 

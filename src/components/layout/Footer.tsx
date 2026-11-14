@@ -96,32 +96,34 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <Phone className="w-4 h-4 text-[#E89A97] shrink-0" />
                 <span>Helpline: </span>
                 <a
-                  href={`tel:+92${settings.helpline ? settings.helpline.replace(/^0/, '') : '3284454746'}`}
+                  href={`tel:+92${(settings.helpline || '0328-0547200').replace(/[^0-9]/g, '').replace(/^0/, '')}`}
                   className="text-white hover:text-[#C5A059] font-medium transition"
                 >
-                  {settings.helpline || '03284454746'}
+                  {settings.helpline || '0328-0547200'}
                 </a>
               </div>
               <div className="flex items-center gap-2.5">
                 <MessageCircle className="w-4 h-4 text-[#25D366] shrink-0" />
                 <span>WhatsApp: </span>
                 <a
-                  href="https://wa.me/923284454746"
+                  href={`https://wa.me/${(settings.whatsapp || '+923280547200').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                    'Assalam-o-Alaikum NOOR STUDIO, I would like to inquire about your collection.'
+                  )}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[#25D366] font-medium hover:underline transition"
                 >
-                  +923284454746
+                  {settings.helpline || '0328-0547200'}
                 </a>
               </div>
               <div className="flex items-center gap-2.5">
                 <Mail className="w-4 h-4 text-[#E89A97] shrink-0" />
                 <span>Email: </span>
                 <a
-                  href={`mailto:${settings.email || 'support@noorstudio.pk'}`}
-                  className="text-white hover:text-[#C5A059] font-medium transition"
+                  href={`mailto:${settings.email || 'noorstudio16mpa@gmail.com'}`}
+                  className="text-white hover:text-[#C5A059] font-medium transition break-all"
                 >
-                  {settings.email || 'support@noorstudio.pk'}
+                  {settings.email || 'noorstudio16mpa@gmail.com'}
                 </a>
               </div>
             </div>

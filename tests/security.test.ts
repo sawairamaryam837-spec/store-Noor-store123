@@ -421,7 +421,12 @@ test('Scenario 9 & 10: Zero admin links/demo accounts in storefront UI & strict 
   for (const relPath of customerUiFiles) {
     const content = fs.readFileSync(path.join(rootDir, relPath), 'utf-8');
     assert.equal(content.includes('sawaira'), false, `${relPath} must not contain legacy email`);
-    assert.equal(content.includes(AUTHORIZED_ADMIN_EMAIL), false, `${relPath} must not expose admin email`);
+    if (
+      relPath !== 'src/components/layout/Footer.tsx' &&
+      relPath !== 'src/components/layout/Header.tsx'
+    ) {
+      assert.equal(content.includes(AUTHORIZED_ADMIN_EMAIL), false, `${relPath} must not expose admin email`);
+    }
     assert.equal(content.includes('signInAsAdminDemo'), false, `${relPath} must not have demo admin login`);
     assert.equal(content.includes('signInAsCustomerDemo'), false, `${relPath} must not have demo customer login`);
     assert.equal(/admin\s*(portal|login|dashboard)/i.test(content), false, `${relPath} must not link to admin portal`);

@@ -1286,12 +1286,12 @@ export const AdminDashboard: React.FC<{ onExit: () => void }> = ({ onExit }) => 
                 <div className="space-y-3 text-xs">
                   <div className="p-3 rounded-xl bg-[#FAF8F5] border border-[#EADBCE]">
                     <span className="text-[#8C827A] block">Customer Support Helpline</span>
-                    <span className="font-bold text-[#1F1C1A] text-sm">{settings.helpline || '03284454746'}</span>
+                    <span className="font-bold text-[#1F1C1A] text-sm">{settings.helpline || '0328-0547200'}</span>
                   </div>
 
                   <div className="p-3 rounded-xl bg-[#FAF8F5] border border-[#EADBCE]">
                     <span className="text-[#8C827A] block">WhatsApp Business Contact</span>
-                    <span className="font-bold text-[#25D366] text-sm">{settings.whatsapp || '+923284454746'}</span>
+                    <span className="font-bold text-[#25D366] text-sm">{settings.whatsapp || '+923280547200'}</span>
                   </div>
 
                   <div className="p-3 rounded-xl bg-[#FAF8F5] border border-[#EADBCE]">

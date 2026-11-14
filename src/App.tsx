@@ -260,11 +260,11 @@ function MainApp() {
       {/* Global Floating WhatsApp Button */}
       <aside aria-label="Quick contact" className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex flex-col gap-2.5">
         <a
-          href="https://wa.me/923284454746?text=Assalam-o-Alaikum%20NOOR%20STUDIO%2C%20I%20need%20assistance%20with%20an%20order."
+          href="https://wa.me/923280547200?text=Assalam-o-Alaikum%20NOOR%20STUDIO%2C%20I%20need%20assistance%20with%20an%20order."
           target="_blank"
           rel="noopener noreferrer"
           className="group flex items-center gap-2 p-3 sm:p-3.5 bg-[#25D366] hover:bg-[#20ba5a] text-white rounded-full shadow-2xl transition-all duration-300 hover:scale-105"
-          title="Chat with NOOR STUDIO on WhatsApp (03284454746)"
+          title="Chat with NOOR STUDIO on WhatsApp (0328-0547200)"
         >
           <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6" />
           <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-500 text-xs font-semibold pr-1">

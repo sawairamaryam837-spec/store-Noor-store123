@@ -537,7 +537,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({
 
               {/* Direct WhatsApp Order / Restock Inquiry Button */}
               <a
-                href={`https://wa.me/923284454746?text=${encodeURIComponent(
+                href={`https://wa.me/923280547200?text=${encodeURIComponent(
                   `Assalam-o-Alaikum NOOR STUDIO, I am interested in: ${product.name} (Color: ${activeColor.name}, Size: ${selectedSize || 'Not selected'}, Price: Rs. ${effectivePrice.toLocaleString()}). ${
                     isOutOfStock ? 'Since this is currently Sold Out, please let me know if a restock or pre-order is available.' : 'Please confirm order availability.'
                   }`
@@ -547,7 +547,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({
                 className="w-full py-2.5 px-4 rounded-lg bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-semibold flex items-center justify-center gap-2 transition shadow-sm"
               >
                 <MessageCircle className="w-4 h-4" />
-                <span>{isOutOfStock ? 'Request Restock / Pre-Order on WhatsApp' : 'Direct Order via WhatsApp (03284454746)'}</span>
+                <span>{isOutOfStock ? 'Request Restock / Pre-Order on WhatsApp' : 'Direct Order via WhatsApp (0328-0547200)'}</span>
               </a>
             </div>
 

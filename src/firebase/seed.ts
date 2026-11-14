@@ -8,13 +8,13 @@ export { INITIAL_PRODUCTS };
 export const INITIAL_SETTINGS: StoreSettings = {
   brandName: 'NOOR STUDIO',
   tagline: 'Wear Your Elegance Style Of Excellence',
-  helpline: '03284454746',
-  whatsapp: '+923284454746',
-  email: 'support@noorstudio.pk',
+  helpline: '0328-0547200',
+  whatsapp: '+923280547200',
+  email: 'noorstudio16mpa@gmail.com',
   websiteUrl: 'https://www.noorstudio.pk',
   shippingFee: 250,
   freeShippingThreshold: 5000,
-  announcement: '✨ Free Express Delivery Nationwide on Orders Above Rs. 5,000 | Cash on Delivery Available | Helpline: 03284454746',
+  announcement: '✨ Free Express Delivery Nationwide on Orders Above Rs. 5,000 | Cash on Delivery Available | Helpline: 0328-0547200',
 };
 
 export const INITIAL_CATEGORIES: Category[] = [

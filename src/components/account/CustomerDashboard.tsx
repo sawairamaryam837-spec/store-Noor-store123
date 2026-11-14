@@ -237,11 +237,11 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
       } else {
         setTrackError(
           data?.error ||
-            'Order not found. Please verify your Order Number and Phone Number or contact Helpline: 03284454746.'
+            'Order not found. Please verify your Order Number and Phone Number or contact Helpline: 0328-0547200.'
         );
       }
     } catch {
-      setTrackError('Unable to retrieve tracking information right now. Please contact +923284454746.');
+      setTrackError('Unable to retrieve tracking information right now. Please contact 0328-0547200.');
     } finally {
       setIsSearchingTrack(false);
     }
@@ -609,7 +609,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
 
               <div className="pt-2 border-t border-[#EADBCE]">
                 <a
-                  href={`https://wa.me/923284454746?text=${encodeURIComponent(
+                  href={`https://wa.me/923280547200?text=${encodeURIComponent(
                     `Assalam-o-Alaikum NOOR STUDIO, I am inquiring about Order #${trackedOrder.orderNumber}.`
                   )}`}
                   target="_blank"

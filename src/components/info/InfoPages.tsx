@@ -82,10 +82,10 @@ export const ContactPage: React.FC = () => {
                 <div>
                   <span className="font-semibold text-[#1F1C1A] block">Customer Helpline (Voice)</span>
                   <a
-                    href={`tel:+92${settings.helpline ? settings.helpline.replace(/^0/, '') : '3284454746'}`}
+                    href={`tel:+92${(settings.helpline || '0328-0547200').replace(/[^0-9]/g, '').replace(/^0/, '')}`}
                     className="text-[#B88E3E] font-bold text-sm hover:underline"
                   >
-                    {settings.helpline || '03284454746'}
+                    {settings.helpline || '0328-0547200'}
                   </a>
                   <p className="text-[11px] text-[#8C827A]">Available Mon–Sat: 10:00 AM – 8:00 PM PKT</p>
                 </div>
@@ -98,12 +98,12 @@ export const ContactPage: React.FC = () => {
                 <div>
                   <span className="font-semibold text-[#1F1C1A] block">WhatsApp Support</span>
                   <a
-                    href="https://wa.me/923284454746"
+                    href={`https://wa.me/${(settings.whatsapp || '+923280547200').replace(/[^0-9]/g, '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#25D366] font-bold text-sm hover:underline"
                   >
-                    +923284454746
+                    {settings.helpline || '0328-0547200'}
                   </a>
                   <p className="text-[11px] text-[#8C827A]">Direct message for quick order confirmations</p>
                 </div>
@@ -116,10 +116,10 @@ export const ContactPage: React.FC = () => {
                 <div className="min-w-0">
                   <span className="font-semibold text-[#1F1C1A] block">Business Inquiries</span>
                   <a
-                    href={`mailto:${settings.email || 'support@noorstudio.pk'}`}
+                    href={`mailto:${settings.email || 'noorstudio16mpa@gmail.com'}`}
                     className="text-[#1F1C1A] font-medium hover:underline break-all sm:break-words"
                   >
-                    {settings.email || 'support@noorstudio.pk'}
+                    {settings.email || 'noorstudio16mpa@gmail.com'}
                   </a>
                 </div>
               </div>
@@ -286,7 +286,7 @@ export const ReturnsPolicyPage: React.FC = () => {
 
         <h3 className="font-serif text-lg font-bold text-[#1F1C1A]">How to Initiate an Exchange</h3>
         <p>
-          Simply message our WhatsApp Helpline at <a href="https://wa.me/923284454746" className="text-[#25D366] font-bold">+923284454746</a> with
+          Simply message our WhatsApp Helpline at <a href="https://wa.me/923280547200" target="_blank" rel="noopener noreferrer" className="text-[#25D366] font-bold">0328-0547200</a> with
           your Order Number and pictures of the item. Our concierge will arrange a reverse pickup or replacement shipment.
         </p>
       </div>
@@ -314,7 +314,7 @@ export const FAQsPage: React.FC = () => {
     },
     {
       q: 'What are your helpline hours?',
-      a: 'Our customer helpline 03284454746 and WhatsApp support +923284454746 are operational Monday through Saturday, from 10:00 AM to 8:00 PM PKT.',
+      a: 'Our customer helpline 0328-0547200 and WhatsApp support +923280547200 are operational Monday through Saturday, from 10:00 AM to 8:00 PM PKT.',
     },
   ];
 
@@ -364,7 +364,7 @@ export const PrivacyPolicyPage: React.FC = () => {
 
         <h3 className="font-serif text-base font-bold text-[#1F1C1A]">Inquiries & Assistance</h3>
         <p>
-          For privacy queries or data removal requests, please reach out to our team at <a href="mailto:support@noorstudio.pk" className="text-[#B88E3E] font-medium underline">support@noorstudio.pk</a> or call helpline <a href="tel:03284454746" className="text-[#1F1C1A] font-bold">03284454746</a>.
+          For privacy queries or data removal requests, please reach out to our team at <a href="mailto:noorstudio16mpa@gmail.com" className="text-[#B88E3E] font-medium underline">noorstudio16mpa@gmail.com</a> or call helpline <a href="tel:+923280547200" className="text-[#1F1C1A] font-bold">0328-0547200</a>.
         </p>
       </div>
     </div>

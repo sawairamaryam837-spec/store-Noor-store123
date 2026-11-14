@@ -363,13 +363,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
           {/* Action buttons */}
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <a
-              href={`https://wa.me/923284454746?text=${whatsappMessage}`}
+              href={`https://wa.me/923280547200?text=${whatsappMessage}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 py-3 px-4 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition"
             >
               <MessageCircle className="w-4 h-4" />
-              <span>Confirm on WhatsApp (03284454746)</span>
+              <span>Confirm on WhatsApp (0328-0547200)</span>
             </a>
             <button
               onClick={onBackToShop}
@@ -381,8 +381,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
 
           <div className="text-xs text-[#8C827A] pt-2">
             Need immediate assistance? Call our customer helpline at{' '}
-            <a href="tel:03284454746" className="text-[#1F1C1A] font-bold underline">
-              03284454746
+            <a href="tel:+923280547200" className="text-[#1F1C1A] font-bold underline">
+              0328-0547200
             </a>
           </div>
         </div>
@@ -714,7 +714,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onView
                 <Truck className="w-3.5 h-3.5 text-[#B88E3E]" />
                 Estimated Nationwide Delivery: 2–4 Business Days
               </p>
-              <p>Helpline: 03284454746 | WhatsApp: +923284454746</p>
+              <p>Helpline: 0328-0547200 | WhatsApp: +923280547200</p>
             </div>
           </div>
         </div>

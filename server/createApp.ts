@@ -160,7 +160,7 @@ export function generateOrderEmailHtml(order: any) {
                       <strong>${order.customer?.fullName || 'Valued Customer'}</strong><br/>
                       ${order.customer?.address || 'Pakistan'}<br/>
                       ${order.customer?.city || 'Pakistan'} ${order.customer?.postalCode ? `(${order.customer.postalCode})` : ''}<br/>
-                      <strong>Phone / WhatsApp:</strong> ${order.customer?.phone || '03284454746'}<br/>
+                      <strong>Phone / WhatsApp:</strong> ${order.customer?.phone || '0328-0547200'}<br/>
                       <strong>Email:</strong> ${order.customer?.email || 'N/A'}
                     </p>
                   </div>
@@ -169,7 +169,7 @@ export function generateOrderEmailHtml(order: any) {
               <tr>
                 <td style="background-color: #FAF8F5; border-top: 1px solid #EADBCE; padding: 18px 24px; text-align: center; font-size: 11px; color: #8C827A; line-height: 1.5;">
                   <p style="margin: 0 0 4px 0;"><strong>NOOR STUDIO</strong> • Gulberg III, Lahore, Pakistan</p>
-                  <p style="margin: 0;">Official Helpline: 03284454746 • Email: support@noorstudio.pk</p>
+                  <p style="margin: 0;">Official Helpline: 0328-0547200 • Email: noorstudio16mpa@gmail.com</p>
                 </td>
               </tr>
             </table>
@@ -489,9 +489,9 @@ export function createApiApp(options: AppOptions = {}) {
           });
 
           await transporter.sendMail({
-            from: `"NOOR STUDIO" <${process.env.SMTP_FROM || 'support@noorstudio.pk'}>`,
+            from: `"NOOR STUDIO" <${process.env.SMTP_FROM || AUTHORIZED_ADMIN_EMAIL}>`,
             to: customerEmail,
-            bcc: `${AUTHORIZED_ADMIN_EMAIL}, support@noorstudio.pk`,
+            bcc: AUTHORIZED_ADMIN_EMAIL,
             subject: `Order Confirmed #${completeOrder.orderNumber} – NOOR STUDIO`,
             html: emailHtml,
           });
