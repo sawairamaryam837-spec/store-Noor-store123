@@ -1,8 +1,10 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import {
   User,
   onAuthStateChanged,
+  GoogleAuthProvider,
   signInWithPopup,
+  signInWithCredential,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut as fbSignOut,
@@ -14,13 +16,67 @@ import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import {
   auth,
   db,
-  googleProvider,
   handleFirestoreError,
   OperationType,
 } from '../firebase/config';
+import firebaseConfig from '../../firebase-applet-config.json';
 import { CustomerInfo, UserProfile } from '../types';
 
 const AUTHORIZED_ADMIN_EMAIL = 'noorstudio16mpa@gmail.com';
+const GIS_SCRIPT_URL = 'https://accounts.google.com/gsi/client';
+
+let gisLoadPromise: Promise<void> | null = null;
+
+function ensureGisLoaded(): Promise<void> {
+  if (typeof window === 'undefined') {
+    return Promise.reject(new Error('Google Sign-In requires a browser environment.'));
+  }
+  const win = window as any;
+  if (win.google?.accounts?.oauth2) {
+    return Promise.resolve();
+  }
+  if (gisLoadPromise) {
+    return gisLoadPromise;
+  }
+  gisLoadPromise = new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${GIS_SCRIPT_URL}"]`) as HTMLScriptElement | null;
+    if (existing) {
+      if (win.google?.accounts?.oauth2) {
+        resolve();
+        return;
+      }
+      existing.addEventListener('load', () => resolve(), { once: true });
+      existing.addEventListener(
+        'error',
+        () => {
+          gisLoadPromise = null;
+          reject(new Error('Unable to load Google Identity Services.'));
+        },
+        { once: true }
+      );
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = GIS_SCRIPT_URL;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      if ((window as any).google?.accounts?.oauth2) {
+        resolve();
+      } else {
+        gisLoadPromise = null;
+        reject(new Error('Google Identity Services did not initialize.'));
+      }
+    };
+    script.onerror = () => {
+      gisLoadPromise = null;
+      reject(new Error('Network error loading Google Identity Services.'));
+    };
+    (document.head || document.documentElement).appendChild(script);
+  });
+  return gisLoadPromise;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -39,10 +95,13 @@ interface AuthContextType {
     postalCode?: string;
   }) => Promise<void>;
   signInWithGoogle: () => Promise<boolean>;
+  signInWithGoogleDirect: () => Promise<boolean>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (name: string, phone: string, email: string, password: string) => Promise<void>;
   signInAdmin: (email: string, password: string) => Promise<void>;
   signInAdminWithGoogle: () => Promise<boolean>;
+  signInAdminWithGoogleDirect: () => Promise<boolean>;
+  ensureGoogleOAuthReady: () => void;
   resetPassword: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -77,6 +136,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminVerified, setAdminVerified] = useState(false);
   const [savedAddress, setSavedAddress] = useState<Partial<CustomerInfo> | null>(null);
+  const popupBridgeFailedRef = useRef(false);
 
   const loadOrCreateUserProfile = useCallback(async (firebaseUser: User, verifiedAdmin: boolean) => {
     const uid = firebaseUser.uid;
@@ -165,20 +225,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setLoading(true);
       setUser(currentUser);
-
-      if (currentUser) {
-        const backendAdminOk = await verifyAdminWithBackend(currentUser);
-        setIsAdmin(backendAdminOk);
-        setAdminVerified(backendAdminOk);
-        await loadOrCreateUserProfile(currentUser, backendAdminOk);
-      } else {
-        setIsAdmin(false);
-        setAdminVerified(false);
-        setUserProfile(null);
-        setSavedAddress(null);
+      try {
+        if (currentUser) {
+          const backendAdminOk = await verifyAdminWithBackend(currentUser);
+          setIsAdmin(backendAdminOk);
+          setAdminVerified(backendAdminOk);
+          await loadOrCreateUserProfile(currentUser, backendAdminOk);
+        } else {
+          setIsAdmin(false);
+          setAdminVerified(false);
+          setUserProfile(null);
+          setSavedAddress(null);
+        }
+      } catch (err) {
+        console.warn('Auth state sync note:', err);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -336,9 +399,127 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {}
   };
 
+  const ensureGoogleOAuthReady = useCallback(() => {
+    if (firebaseConfig.oAuthClientId) {
+      ensureGisLoaded().catch(() => {});
+    }
+  }, []);
+
+  const signInViaGisPopup = async (adminMode: boolean): Promise<boolean> => {
+    const clientId = firebaseConfig.oAuthClientId;
+    if (!clientId) {
+      const err: any = new Error('Google OAuth client ID is not configured.');
+      err.code = 'auth/operation-not-allowed';
+      throw err;
+    }
+
+    await ensureGisLoaded();
+    const oauth2 = (window as any).google?.accounts?.oauth2;
+    if (!oauth2?.initTokenClient) {
+      const err: any = new Error('Google Identity Services OAuth client is unavailable.');
+      err.code = 'auth/network-request-failed';
+      throw err;
+    }
+
+    const accessToken = await new Promise<string | null>((resolve, reject) => {
+      try {
+        const tokenClient = oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'openid email profile',
+          prompt: 'select_account',
+          callback: (resp: { access_token?: string; error?: string; error_description?: string }) => {
+            if (resp?.error) {
+              if (resp.error === 'access_denied' || resp.error === 'popup_closed') {
+                resolve(null);
+                return;
+              }
+              const err: any = new Error(resp.error_description || resp.error);
+              err.code = resp.error === 'popup_failed_to_open' ? 'auth/popup-blocked' : 'auth/internal-error';
+              reject(err);
+              return;
+            }
+            if (!resp?.access_token) {
+              resolve(null);
+              return;
+            }
+            resolve(resp.access_token);
+          },
+          error_callback: (errObj: { type?: string; message?: string }) => {
+            if (errObj?.type === 'popup_closed') {
+              resolve(null);
+              return;
+            }
+            const err: any = new Error(errObj?.message || 'Google popup could not be opened.');
+            err.code = errObj?.type === 'popup_failed_to_open' ? 'auth/popup-blocked' : 'auth/internal-error';
+            reject(err);
+          },
+        });
+        tokenClient.requestAccessToken();
+      } catch (initErr) {
+        reject(initErr);
+      }
+    });
+
+    if (!accessToken) {
+      return false;
+    }
+
+    const credential = GoogleAuthProvider.credential(null, accessToken);
+    const result = await signInWithCredential(auth, credential);
+    if (!result.user) {
+      return false;
+    }
+
+    if (adminMode) {
+      const signedInEmail = (result.user.email || '').trim().toLowerCase();
+      if (signedInEmail !== AUTHORIZED_ADMIN_EMAIL || !result.user.emailVerified) {
+        await fbSignOut(auth);
+        setIsAdmin(false);
+        setAdminVerified(false);
+        throw new Error('Access denied. Invalid administrator credentials or unauthorized account.');
+      }
+      const backendAuthorized = await verifyAdminWithBackend(result.user);
+      if (!backendAuthorized) {
+        await fbSignOut(auth);
+        setIsAdmin(false);
+        setAdminVerified(false);
+        throw new Error('Backend authorization check failed. Access denied.');
+      }
+      await result.user.getIdToken(true);
+      setIsAdmin(true);
+      setAdminVerified(true);
+      return true;
+    }
+
+    const isBackendAdmin = await verifyAdminWithBackend(result.user);
+    setIsAdmin(isBackendAdmin);
+    setAdminVerified(isBackendAdmin);
+    await loadOrCreateUserProfile(result.user, isBackendAdmin);
+    return true;
+  };
+
+  const signInWithGoogleDirect = async (): Promise<boolean> => {
+    return signInViaGisPopup(false);
+  };
+
+  const signInAdminWithGoogleDirect = async (): Promise<boolean> => {
+    return signInViaGisPopup(true);
+  };
+
   const signInWithGoogle = async (): Promise<boolean> => {
+    if (
+      popupBridgeFailedRef.current &&
+      typeof window !== 'undefined' &&
+      (window as any).google?.accounts?.oauth2 &&
+      firebaseConfig.oAuthClientId
+    ) {
+      return signInViaGisPopup(false);
+    }
+
     try {
-      const result = await signInWithPopup(auth, googleProvider);
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const result = await signInWithPopup(auth, provider);
       if (result.user) {
         const isBackendAdmin = await verifyAdminWithBackend(result.user);
         setIsAdmin(isBackendAdmin);
@@ -353,6 +534,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         err?.code === 'auth/cancelled-popup-request'
       ) {
         return false;
+      }
+      if (
+        err?.code === 'auth/network-request-failed' ||
+        err?.code === 'auth/internal-error' ||
+        err?.code === 'auth/web-storage-unsupported'
+      ) {
+        popupBridgeFailedRef.current = true;
+        ensureGisLoaded().catch(() => {});
+        console.warn('[AUTH] Google popup bridge fallback prepared:', err?.code);
+      } else {
+        console.warn('[AUTH] Google sign-in notice:', err?.code, err?.message);
       }
       throw err;
     }
@@ -466,9 +658,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signInAdminWithGoogle = async (): Promise<boolean> => {
+    if (
+      popupBridgeFailedRef.current &&
+      typeof window !== 'undefined' &&
+      (window as any).google?.accounts?.oauth2 &&
+      firebaseConfig.oAuthClientId
+    ) {
+      return signInViaGisPopup(true);
+    }
+
     try {
-      googleProvider.setCustomParameters({ prompt: 'select_account' });
-      const result = await signInWithPopup(auth, googleProvider);
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const result = await signInWithPopup(auth, provider);
       if (!result.user) {
         return false;
       }
@@ -499,6 +701,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         err?.code === 'auth/cancelled-popup-request'
       ) {
         return false;
+      }
+      if (
+        err?.code === 'auth/network-request-failed' ||
+        err?.code === 'auth/internal-error' ||
+        err?.code === 'auth/web-storage-unsupported'
+      ) {
+        popupBridgeFailedRef.current = true;
+        ensureGisLoaded().catch(() => {});
+        console.warn('[AUTH] Admin Google popup bridge fallback prepared:', err?.code);
+      } else {
+        console.warn('[AUTH] Admin Google sign-in notice:', err?.code, err?.message);
       }
       throw err;
     }
@@ -533,10 +746,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         saveAddress,
         updateUserProfile,
         signInWithGoogle,
+        signInWithGoogleDirect,
         signInWithEmail,
         signUpWithEmail,
         signInAdmin,
         signInAdminWithGoogle,
+        signInAdminWithGoogleDirect,
+        ensureGoogleOAuthReady,
         resetPassword,
         signOut,
       }}

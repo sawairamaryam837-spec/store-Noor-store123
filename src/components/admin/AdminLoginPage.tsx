@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Lock,
   Mail,
@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   ShieldCheck,
   Loader2,
+  ExternalLink,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -17,7 +18,13 @@ interface AdminLoginPageProps {
 }
 
 export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onBackToStore }) => {
-  const { signInAdmin, signInAdminWithGoogle, resetPassword } = useAuth();
+  const {
+    signInAdmin,
+    signInAdminWithGoogle,
+    signInAdminWithGoogleDirect,
+    ensureGoogleOAuthReady,
+    resetPassword,
+  } = useAuth();
 
   const [mode, setMode] = useState<'login' | 'forgot'>('login');
   const [email, setEmail] = useState('');
@@ -25,27 +32,78 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onBackToStore })
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDirectGoogleFallback, setShowDirectGoogleFallback] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    ensureGoogleOAuthReady();
+  }, [ensureGoogleOAuthReady]);
+
+  const formatGoogleError = (err: any) => {
+    const code = err?.code || '';
+    if (code === 'auth/popup-blocked') {
+      setShowDirectGoogleFallback(true);
+      setError('Browser blocked the sign-in popup. Please allow popups or try Direct Google Sign-In below.');
+    } else if (code === 'auth/unauthorized-domain') {
+      setShowDirectGoogleFallback(true);
+      setError(
+        `This domain (${window.location.hostname}) is not authorized in Firebase Console > Authentication > Settings > Authorized domains.`
+      );
+    } else if (code === 'auth/operation-not-allowed') {
+      setShowDirectGoogleFallback(false);
+      setError('Google sign-in is disabled in Firebase Console. Please enable it under Authentication > Sign-in method.');
+    } else if (code === 'auth/internal-error' || code === 'auth/web-storage-unsupported') {
+      setShowDirectGoogleFallback(true);
+      setError(
+        `Browser blocked embedded popup storage (${code}). Use Direct Google Sign-In below or open /admin in a new tab.`
+      );
+    } else if (code === 'auth/network-request-failed') {
+      setShowDirectGoogleFallback(true);
+      setError(
+        'Could not complete the standard Google popup bridge (network or iframe restriction). Click "Try Direct Google Sign-In" below or open /admin in a new tab.'
+      );
+    } else {
+      setShowDirectGoogleFallback(false);
+      setError(
+        code
+          ? `Google sign-in error (${code}): ${err?.message || 'Unable to authenticate.'}`
+          : err?.message || 'Unable to authenticate administrator access.'
+      );
+    }
+  };
 
   const handleGoogleAdminSignIn = async () => {
     setError(null);
     setSuccessMessage(null);
+    setShowDirectGoogleFallback(false);
     setLoading(true);
     try {
       await signInAdminWithGoogle();
     } catch (err: any) {
-      const code = err?.code || '';
-      if (code === 'auth/popup-blocked') {
-        setError('Browser blocked the Google sign-in popup. Please allow popups and try again.');
-      } else if (code === 'auth/operation-not-allowed') {
-        setError('Google sign-in is disabled in Firebase Console. Please enable it under Authentication > Sign-in method.');
-      } else {
-        setError(err?.message || 'Unable to authenticate administrator access.');
-      }
+      formatGoogleError(err);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleDirectGoogleAdminSignIn = async () => {
+    setError(null);
+    setSuccessMessage(null);
+    setLoading(true);
+    try {
+      const signedIn = await signInAdminWithGoogleDirect();
+      if (signedIn) {
+        setShowDirectGoogleFallback(false);
+      }
+    } catch (err: any) {
+      formatGoogleError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isEmbeddedIframe =
+    typeof window !== 'undefined' && window.self !== window.top;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,10 +201,35 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onBackToStore })
           {error && (
             <div
               role="alert"
-              className="p-3.5 rounded-xl bg-red-950/60 border border-red-500/40 text-xs text-red-200 flex items-start gap-2.5"
+              className="p-3.5 rounded-xl bg-red-950/60 border border-red-500/40 text-xs text-red-200 space-y-2.5"
             >
-              <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-              <span className="leading-relaxed">{error}</span>
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                <span className="leading-relaxed">{error}</span>
+              </div>
+              {showDirectGoogleFallback && mode === 'login' && (
+                <div className="flex flex-wrap items-center gap-2 pl-6">
+                  <button
+                    type="button"
+                    onClick={handleDirectGoogleAdminSignIn}
+                    disabled={loading}
+                    className="px-3 py-1.5 rounded-lg bg-[#C5A059] text-[#12100E] text-[11px] font-bold hover:bg-[#D4B16B] transition disabled:opacity-50"
+                  >
+                    Try Direct Google Sign-In
+                  </button>
+                  {isEmbeddedIframe && (
+                    <a
+                      href={window.location.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-400/40 bg-red-950/80 text-red-100 text-[11px] font-semibold hover:bg-red-900/60 transition"
+                    >
+                      <span>Open in New Tab</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Mail,
@@ -10,6 +10,7 @@ import {
   Eye,
   EyeOff,
   Loader2,
+  ExternalLink,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -21,8 +22,10 @@ interface AuthModalProps {
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const {
     signInWithGoogle,
+    signInWithGoogleDirect,
     signInWithEmail,
     signUpWithEmail,
+    ensureGoogleOAuthReady,
     resetPassword,
   } = useAuth();
 
@@ -33,8 +36,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDirectGoogleFallback, setShowDirectGoogleFallback] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      ensureGoogleOAuthReady();
+    } else {
+      setShowDirectGoogleFallback(false);
+    }
+  }, [isOpen, ensureGoogleOAuthReady]);
 
   if (!isOpen) return null;
 
@@ -99,8 +111,42 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  const formatGoogleError = (err: any) => {
+    const code = err?.code || '';
+    if (code === 'auth/popup-blocked') {
+      setShowDirectGoogleFallback(true);
+      setError('Browser blocked the sign-in popup. Please allow popups or try Direct Google Sign-In below.');
+    } else if (code === 'auth/unauthorized-domain') {
+      setShowDirectGoogleFallback(true);
+      setError(
+        `This domain (${window.location.hostname}) is not authorized in Firebase Console > Authentication > Settings > Authorized domains.`
+      );
+    } else if (code === 'auth/operation-not-allowed') {
+      setShowDirectGoogleFallback(false);
+      setError('Google sign-in is disabled in Firebase Console. Please enable it under Authentication > Sign-in method.');
+    } else if (code === 'auth/internal-error' || code === 'auth/web-storage-unsupported') {
+      setShowDirectGoogleFallback(true);
+      setError(
+        `Browser blocked embedded popup storage (${code}). Use Direct Google Sign-In below or open the app in a new tab.`
+      );
+    } else if (code === 'auth/network-request-failed') {
+      setShowDirectGoogleFallback(true);
+      setError(
+        'Could not complete the standard Google popup bridge (network or iframe restriction). Click "Try Direct Google Sign-In" below or open in a new tab.'
+      );
+    } else {
+      setShowDirectGoogleFallback(false);
+      setError(
+        code
+          ? `Google sign-in error (${code}): ${err?.message || 'Please try again.'}`
+          : err?.message || 'Google sign in was not completed. Please try again.'
+      );
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     setError(null);
+    setShowDirectGoogleFallback(false);
     try {
       setLoading(true);
       const signedIn = await signInWithGoogle();
@@ -108,23 +154,44 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         onClose();
       }
     } catch (err: any) {
+      const code = err?.code || '';
       if (
-        err?.code === 'auth/popup-closed-by-user' ||
-        err?.code === 'auth/cancelled-popup-request'
+        code === 'auth/popup-closed-by-user' ||
+        code === 'auth/cancelled-popup-request'
       ) {
         return;
       }
-      if (err?.code === 'auth/popup-blocked') {
-        setError('Browser blocked Google sign-in popup. Please allow popups or sign in with email.');
-      } else if (err?.code === 'auth/operation-not-allowed') {
-        setError('Google sign-in is disabled in Firebase Console. Please enable it under Authentication > Sign-in method.');
-      } else {
-        setError('Google sign in was not completed. Please try again.');
-      }
+      formatGoogleError(err);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleDirectGoogleSignIn = async () => {
+    setError(null);
+    try {
+      setLoading(true);
+      const signedIn = await signInWithGoogleDirect();
+      if (signedIn) {
+        setShowDirectGoogleFallback(false);
+        onClose();
+      }
+    } catch (err: any) {
+      const code = err?.code || '';
+      if (
+        code === 'auth/popup-closed-by-user' ||
+        code === 'auth/cancelled-popup-request'
+      ) {
+        return;
+      }
+      formatGoogleError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isEmbeddedIframe =
+    typeof window !== 'undefined' && window.self !== window.top;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
@@ -160,10 +227,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         {error && (
           <div
             role="alert"
-            className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2"
+            className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 space-y-2"
           >
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+            {showDirectGoogleFallback && mode !== 'forgot' && (
+              <div className="flex flex-wrap items-center gap-2 pl-6">
+                <button
+                  type="button"
+                  onClick={handleDirectGoogleSignIn}
+                  disabled={loading}
+                  className="px-2.5 py-1.5 rounded-lg bg-[#1F1C1A] text-white text-[11px] font-semibold hover:bg-[#B88E3E] transition disabled:opacity-50"
+                >
+                  Try Direct Google Sign-In
+                </button>
+                {isEmbeddedIframe && (
+                  <a
+                    href={window.location.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-300 bg-white text-red-800 text-[11px] font-semibold hover:bg-red-100 transition"
+                  >
+                    <span>Open in New Tab</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+            )}
           </div>
         )}
 

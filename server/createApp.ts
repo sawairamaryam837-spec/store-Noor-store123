@@ -196,7 +196,7 @@ export function createApiApp(options: AppOptions = {}) {
     }
   }
 
-  // CORS & Security headers
+  // CORS & Security headers (allow Firebase OAuth popups to retain window.opener)
   app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS');
@@ -204,6 +204,7 @@ export function createApiApp(options: AppOptions = {}) {
       'Access-Control-Allow-Headers',
       'Origin, X-Requested-With, Content-Type, Accept, Authorization'
     );
+    res.header('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
     if (req.method === 'OPTIONS') {
       return res.sendStatus(200);
     }
